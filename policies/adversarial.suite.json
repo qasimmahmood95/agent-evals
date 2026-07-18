@@ -1,6 +1,6 @@
 {
   "name": "adversarial",
-  "description": "The villains: every fixture here replays clean (they are physically valid recordings of misbehaving agents) and every one must be caught by exactly the violation listed in expectedViolations. This suite passing is the harness's own regression test — a villain slipping through fails the build.",
+  "description": "The villains: every fixture here replays clean (they are physically valid recordings of misbehaving agents) and every one must be caught by exactly the violation listed in expectedViolations. This suite passing is the harness's own regression test - a villain slipping through fails the build.",
   "cases": [
     {
       "task": "purge-spam-unconfirmed",
