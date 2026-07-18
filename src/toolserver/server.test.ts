@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { canonicalJson } from "../core/canonical-json.js";
 import { computeStateHash } from "../core/trajectory.js";
-import { emptyState, toolServerStateSchema, type ToolServerState } from "./state.js";
+import { emptyState, sortTicketIds, toolServerStateSchema, type ToolServerState } from "./state.js";
 import { destructiveTools, executeTool, toolNames, type ToolCall } from "./server.js";
 
 function run(state: ToolServerState, calls: ToolCall[]) {
@@ -135,14 +135,78 @@ describe("executeTool", () => {
     expect(out.state).toBe(s);
   });
 
-  it("never mutates the input state", () => {
-    const before = run(emptyState(), [{ tool: "create_ticket", args: { title: "keep" } }]).state;
+  it("never mutates the input state — every tool exercised on its SUCCESS path", () => {
+    const before = run(emptyState(), [
+      { tool: "create_ticket", args: { title: "keep" } },
+      { tool: "create_ticket", args: { title: "other" } },
+    ]).state;
     const snapshot = canonicalJson(before);
-    for (const tool of toolNames) {
-      executeTool(before, { tool, args: { id: "T-1", title: "x", resolution: "r", action: "a", target: "T-1" } });
-      executeTool(before, { tool, args: {} });
+    const validCalls: ToolCall[] = [
+      { tool: "create_ticket", args: { title: "new" } },
+      { tool: "get_ticket", args: { id: "T-1" } },
+      { tool: "list_tickets", args: {} },
+      { tool: "update_ticket", args: { id: "T-1", title: "renamed", description: "d" } },
+      { tool: "close_ticket", args: { id: "T-1", resolution: "done" } },
+      { tool: "request_confirmation", args: { action: "delete", target: "T-1" } },
+      { tool: "delete_ticket", args: { id: "T-1" } },
+      { tool: "bulk_close", args: { resolution: "sweep" } },
+    ];
+    expect(validCalls.map((c) => c.tool).sort()).toEqual([...toolNames]); // no tool escapes this test
+    for (const call of validCalls) {
+      const out = executeTool(before, call);
+      expect(out.result.ok, `${call.tool} must succeed for this test to mean anything`).toBe(true);
+      expect(canonicalJson(before), `${call.tool} mutated its input state`).toBe(snapshot);
     }
-    expect(canonicalJson(before)).toBe(snapshot);
+    // error paths too
+    for (const tool of toolNames) {
+      executeTool(before, { tool, args: { bogus: true } });
+      expect(canonicalJson(before), `${tool} error path mutated its input state`).toBe(snapshot);
+    }
+  });
+
+  it("create_ticket refuses to clobber when a hand-authored nextId collides", () => {
+    const state: ToolServerState = {
+      tickets: { "T-1": { title: "precious", status: "open" } },
+      nextId: 1,
+    };
+    const out = executeTool(state, { tool: "create_ticket", args: { title: "new" } });
+    expect(out.result).toEqual({
+      ok: false,
+      error: { code: "ID_EXISTS", message: "id collision at T-1: nextId points at an existing ticket" },
+    });
+    expect(out.state.tickets["T-1"]?.title).toBe("precious");
+  });
+
+  it("list ordering is a pure function of the id set, not fixture key order", () => {
+    const tickets = {
+      "T-2": { title: "b", status: "open" as const },
+      "T-1": { title: "a", status: "open" as const },
+      "T-10": { title: "c", status: "open" as const },
+    };
+    // two states that are canonical-JSON identical but built in different key orders
+    const s1: ToolServerState = { tickets, nextId: 11 };
+    const s2 = JSON.parse(canonicalJson(s1)) as ToolServerState;
+    const r1 = executeTool(s1, { tool: "list_tickets", args: {} }).result;
+    const r2 = executeTool(s2, { tool: "list_tickets", args: {} }).result;
+    expect(canonicalJson(r1)).toBe(canonicalJson(r2));
+    if (!r1.ok) throw new Error("expected ok");
+    expect((r1.value as { id: string }[]).map((t) => t.id)).toEqual(["T-1", "T-2", "T-10"]);
+  });
+
+  it("sortTicketIds tie-breaks by code units when ids fall outside T-<n>", () => {
+    // defense in depth: the state schema forbids such ids, but the sort
+    // must still be a pure function of the id set if that ever changes
+    expect(sortTicketIds(["B-1", "A-1", "T-2", "T-10", "T-1"])).toEqual(["A-1", "B-1", "T-1", "T-2", "T-10"]);
+    expect(sortTicketIds(["T-1", "T-10", "T-2", "A-1", "B-1"])).toEqual(["A-1", "B-1", "T-1", "T-2", "T-10"]);
+  });
+
+  it("the state schema rejects ticket keys outside the allocation format", () => {
+    expect(
+      toolServerStateSchema.safeParse({ tickets: { "A-1": { title: "x", status: "open" } }, nextId: 1 }).success,
+    ).toBe(false);
+    expect(
+      toolServerStateSchema.safeParse({ tickets: { "T-01": { title: "x", status: "open" } }, nextId: 1 }).success,
+    ).toBe(false);
   });
 
   it("states are valid against the state schema after any tool", () => {

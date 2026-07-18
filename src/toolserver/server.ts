@@ -109,6 +109,11 @@ export function executeTool(state: ToolServerState, call: ToolCall): ExecuteOutc
     case "create_ticket": {
       const args = parsed.data as z.infer<(typeof argSchemas)["create_ticket"]>;
       const id = ticketId(state.nextId);
+      if (state.tickets[id]) {
+        // A hand-authored state may set nextId at an allocated id; clobbering
+        // silently would be a lie about side effects. Deterministic error.
+        return { state, result: err("ID_EXISTS", `id collision at ${id}: nextId points at an existing ticket`) };
+      }
       const ticket: Ticket = { title: args.title, status: "open" };
       if (args.description !== undefined) ticket.description = args.description;
       const next = structuredClone(state);

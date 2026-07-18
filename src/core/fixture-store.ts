@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { computeFixtureId, parseTrajectoryFixture, type TrajectoryFixture } from "./trajectory.js";
+import { parseTrajectoryFixture, type TrajectoryFixture } from "./trajectory.js";
 
 /**
  * Content-addressed fixture store, per ADR-0001.
@@ -25,22 +25,27 @@ export class FixtureStore {
 
   /**
    * Persist a fixture as a new file, never overwriting: an id already on
-   * disk gets the next free occurrence slot, with its own meta. The
-   * fixture's id is recomputed and must match its body — the store refuses
-   * to write a lie.
+   * disk gets the next free occurrence slot, with its own meta. The write
+   * path runs the FULL parse — shape (including the filesystem-safe task-id
+   * pattern) and both hash recomputations — so the store can neither write
+   * a lie nor write outside its root. Exclusive-create ("wx") makes the
+   * occurrence slot claim atomic: a concurrent save of the same body loses
+   * the slot with EEXIST and takes the next one, never overwrites.
    */
   save(fixture: TrajectoryFixture): { path: string; occurrence: number } {
-    const computedId = computeFixtureId(fixture.body);
-    if (computedId !== fixture.id) {
-      throw new Error(`refusing to save fixture: id ${fixture.id} does not match body hash ${computedId}`);
-    }
-    const taskId = fixture.body.task.id;
-    let occurrence = 0;
-    while (existsSync(this.pathFor(taskId, fixture.id, occurrence))) occurrence += 1;
-    const path = this.pathFor(taskId, fixture.id, occurrence);
+    const checked = parseTrajectoryFixture(fixture);
+    const taskId = checked.body.task.id;
     mkdirSync(this.dirFor(taskId), { recursive: true });
-    writeFileSync(path, `${JSON.stringify(fixture, null, 2)}\n`, "utf8");
-    return { path, occurrence };
+    const data = `${JSON.stringify(checked, null, 2)}\n`;
+    for (let occurrence = 0; ; occurrence += 1) {
+      const path = this.pathFor(taskId, checked.id, occurrence);
+      try {
+        writeFileSync(path, data, { encoding: "utf8", flag: "wx" });
+        return { path, occurrence };
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+      }
+    }
   }
 
   /** All fixture files for a task, in deterministic (filename) order. */

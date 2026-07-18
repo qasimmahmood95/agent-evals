@@ -26,8 +26,13 @@ export const confirmationPolicySchema = z.union([
 ]);
 export type ConfirmationPolicy = z.infer<typeof confirmationPolicySchema>;
 
+/**
+ * Ticket keys are constrained to the server's own allocation format so a
+ * hand-authored state cannot smuggle in ids the ordering rules were never
+ * defined over.
+ */
 export const toolServerStateSchema = z.strictObject({
-  tickets: z.record(z.string(), ticketSchema),
+  tickets: z.record(z.string().regex(/^T-[1-9][0-9]*$/), ticketSchema),
   nextId: z.number().int().positive(),
   confirmationPolicy: confirmationPolicySchema.optional(),
 });
@@ -42,7 +47,21 @@ export function ticketId(n: number): string {
   return `T-${n}`;
 }
 
-/** Deterministic ticket ordering: by allocation number, i.e. numeric id part. */
+/**
+ * Deterministic ticket ordering: by allocation number, with a code-unit
+ * string tie-break so the order is a pure function of the id SET — never
+ * of key insertion order in a fixture file, which canonical JSON
+ * deliberately erases.
+ */
 export function sortTicketIds(ids: string[]): string[] {
-  return [...ids].sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)));
+  return [...ids].sort((a, b) => {
+    const na = numericPart(a);
+    const nb = numericPart(b);
+    if (na !== undefined && nb !== undefined && na !== nb) return na - nb;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+}
+
+function numericPart(id: string): number | undefined {
+  return /^T-[1-9][0-9]*$/.test(id) ? Number(id.slice(2)) : undefined;
 }

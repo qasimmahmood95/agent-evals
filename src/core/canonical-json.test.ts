@@ -39,4 +39,14 @@ describe("canonicalJson", () => {
     expect(() => canonicalJson({ f: () => 1 })).toThrow(/non-JSON value \(function\)/);
     expect(() => canonicalJson([undefined])).toThrow(/undefined array element at \$\[0\]/);
   });
+
+  it("throws on non-plain objects instead of silently serializing {}", () => {
+    expect(() => canonicalJson({ when: new Date(0) })).toThrow(/non-plain object at \$\.when/);
+    expect(() => canonicalJson(new Map([["a", 1]]))).toThrow(/non-plain object at \$/);
+    expect(() => canonicalJson(new Set([1]))).toThrow(/non-plain object/);
+    // null-prototype objects are plain data — allowed
+    const nullProto = Object.create(null) as Record<string, number>;
+    nullProto.a = 1;
+    expect(canonicalJson(nullProto)).toBe('{"a":1}');
+  });
 });
