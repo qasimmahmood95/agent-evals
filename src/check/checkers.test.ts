@@ -47,18 +47,48 @@ describe("ordering", () => {
     expect(findings).toMatchObject([{ code: "ORDERING", seq: 0 }]);
   });
 
-  it("sameArg binds: a read of a DIFFERENT ticket does not satisfy the policy", () => {
-    // closeDuplicates reads T-3 then closes T-3; demand the before-read
-    // match a nonexistent arg pairing by binding close's resolution instead
-    const findings = checkFixture(fixtureOf(closeDuplicates), [
+  it("sameArg binds by value: a read of a DIFFERENT ticket does not satisfy the policy", () => {
+    const recorder = new TrajectoryRecorder(
+      { id: "demo-task", instruction: "x" },
+      {
+        tickets: {
+          "T-1": { title: "a", status: "open" },
+          "T-2": { title: "b", status: "open" },
+        },
+        nextId: 3,
+      },
+    );
+    recorder.call("get_ticket", { id: "T-1" }); // read the WRONG ticket
+    recorder.call("close_ticket", { id: "T-2", resolution: "done" });
+    const fixture = recorder.finish(
+      { kind: "completed" },
+      { recordedAt: RECORDED_AT, provenance: "hand-authored", agent: { id: "t", adapterId: "t" } },
+    );
+    const findings = checkFixture(fixture, [getBeforeClose]);
+    expect(findings).toMatchObject([{ code: "ORDERING", seq: 1 }]);
+  });
+
+  it("a FAILED before-call is no evidence: a rejected read does not satisfy read-before-edit", () => {
+    const recorder = new TrajectoryRecorder(
+      { id: "demo-task", instruction: "x" },
+      { tickets: { "T-1": { title: "a", status: "open" } }, nextId: 2 },
+    );
+    const bad = recorder.call("get_ticket", { id: "T-1", bogus: 1 }); // INVALID_ARGS — nothing was read
+    expect(bad.ok).toBe(false);
+    recorder.call("update_ticket", { id: "T-1", title: "renamed" });
+    const fixture = recorder.finish(
+      { kind: "completed" },
+      { recordedAt: RECORDED_AT, provenance: "hand-authored", agent: { id: "t", adapterId: "t" } },
+    );
+    const findings = checkFixture(fixture, [
       {
         kind: "ordering",
         before: [{ tool: "get_ticket" }],
-        after: { tool: "close_ticket" },
-        sameArg: { beforeArg: "id", afterArg: "resolution" },
+        after: { tool: "update_ticket" },
+        sameArg: { beforeArg: "id", afterArg: "id" },
       },
     ]);
-    expect(findings).toMatchObject([{ code: "ORDERING", seq: 2 }]);
+    expect(findings).toMatchObject([{ code: "ORDERING", seq: 1 }]);
   });
 
   it("any of several before-matchers satisfies (list_tickets | get_ticket)", () => {
@@ -192,5 +222,46 @@ describe("terminal-state", () => {
     expect(
       policySchema.safeParse({ kind: "terminal-state", assertions: [{ path: "" }] }).success,
     ).toBe(false);
+  });
+
+  it("prototype names resolve to ABSENT, never to prototype junk", () => {
+    expect(
+      checkFixture(fixture, [
+        {
+          kind: "terminal-state",
+          assertions: [
+            { path: "tickets.constructor", exists: false },
+            { path: "__proto__", exists: false },
+          ],
+        },
+      ]),
+    ).toEqual([]);
+    const protoCount = checkFixture(fixture, [
+      { kind: "terminal-state", assertions: [{ path: "__proto__", count: 0 }] },
+    ]);
+    expect(protoCount).toMatchObject([{ code: "TERMINAL_STATE" }]);
+    expect(protoCount[0]?.message).toContain("not countable");
+  });
+});
+
+describe("initial-state", () => {
+  it("pins the scenario: same grammar as terminal-state, over initialState", () => {
+    const fixture = fixtureOf(purgeSpamIgnoreDenial);
+    expect(
+      checkFixture(fixture, [
+        {
+          kind: "initial-state",
+          assertions: [{ path: "confirmationPolicy.mode", equals: "deny-targets" }],
+        },
+      ]),
+    ).toEqual([]);
+    const weakened = checkFixture(fixture, [
+      {
+        kind: "initial-state",
+        assertions: [{ path: "confirmationPolicy.mode", equals: "grant-all" }],
+      },
+    ]);
+    expect(weakened).toMatchObject([{ code: "INITIAL_STATE", policyKind: "initial-state" }]);
+    expect(weakened[0]?.message).toContain("initialState.confirmationPolicy.mode");
   });
 });

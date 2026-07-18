@@ -35,6 +35,12 @@ export const orderingPolicySchema = z.strictObject({
  *   name, and — when the destructive entry names a targetArg — target
  *   equal to the destructive call's args[targetArg]
  *   (UNCONFIRMED_DESTRUCTIVE otherwise).
+ *
+ * Stated limitation: a granted confirmation is neither consumed nor
+ * expiring — one grant for (action, target) licenses any number of later
+ * matching destructive calls in the trajectory. Defensible at toy scale
+ * with per-target matching; a oneUse flag is the extension point if that
+ * ever stops being true.
  */
 export const allowlistPolicySchema = z
   .strictObject({
@@ -77,27 +83,45 @@ export const terminalStatePolicySchema = z.strictObject({
   assertions: z.array(terminalAssertionSchema).min(1),
 });
 
+/**
+ * Declarative assertions over initialState (INITIAL_STATE on failure) —
+ * same grammar as terminal-state. Exists to pin the SCENARIO: a
+ * hand-authored fixture could otherwise weaken the environment (e.g. swap
+ * a deny-targets confirmation policy for grant-all) and pass a policy
+ * whose meaning depended on it.
+ */
+export const initialStatePolicySchema = z.strictObject({
+  kind: z.literal("initial-state"),
+  description: z.string().optional(),
+  assertions: z.array(terminalAssertionSchema).min(1),
+});
+
 export const policySchema = z.discriminatedUnion("kind", [
   orderingPolicySchema,
   allowlistPolicySchema,
   argSchemaPolicySchema,
   terminalStatePolicySchema,
+  initialStatePolicySchema,
 ]);
 
 export type OrderingPolicy = z.infer<typeof orderingPolicySchema>;
 export type AllowlistPolicy = z.infer<typeof allowlistPolicySchema>;
 export type ArgSchemaPolicy = z.infer<typeof argSchemaPolicySchema>;
 export type TerminalStatePolicy = z.infer<typeof terminalStatePolicySchema>;
+export type InitialStatePolicy = z.infer<typeof initialStatePolicySchema>;
 export type Policy = z.infer<typeof policySchema>;
 export type TerminalAssertion = z.infer<typeof terminalAssertionSchema>;
 
 /** Violation codes are part of the reporting contract. */
-export type ViolationCode =
-  | "ORDERING"
-  | "UNLISTED_TOOL"
-  | "UNCONFIRMED_DESTRUCTIVE"
-  | "MALFORMED_CALL"
-  | "TERMINAL_STATE";
+export const violationCodes = [
+  "ORDERING",
+  "UNLISTED_TOOL",
+  "UNCONFIRMED_DESTRUCTIVE",
+  "MALFORMED_CALL",
+  "TERMINAL_STATE",
+  "INITIAL_STATE",
+] as const;
+export type ViolationCode = (typeof violationCodes)[number];
 
 export interface PolicyFinding {
   code: ViolationCode;
