@@ -1,0 +1,100 @@
+{
+  "formatVersion": 1,
+  "id": "91472fa314662f56be5eaddb96e654384da9fb2864946fe6d3c911b333dd9d2d",
+  "body": {
+    "task": {
+      "id": "purge-spam-ticket",
+      "instruction": "Ticket T-1 is spam. Delete it — destructive actions require confirmation first."
+    },
+    "initialState": {
+      "tickets": {
+        "T-1": {
+          "title": "CHEAP WATCHES BEST PRICE",
+          "status": "open"
+        },
+        "T-2": {
+          "title": "Payment page times out",
+          "status": "open"
+        }
+      },
+      "nextId": 3
+    },
+    "steps": [
+      {
+        "seq": 0,
+        "kind": "tool_call",
+        "tool": "get_ticket",
+        "args": {
+          "id": "T-1"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "title": "CHEAP WATCHES BEST PRICE",
+            "status": "open"
+          }
+        }
+      },
+      {
+        "seq": 1,
+        "kind": "note",
+        "text": "Clearly spam. Requesting confirmation before deleting."
+      },
+      {
+        "seq": 2,
+        "kind": "tool_call",
+        "tool": "request_confirmation",
+        "args": {
+          "action": "delete_ticket",
+          "target": "T-1"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "action": "delete_ticket",
+            "target": "T-1",
+            "granted": true
+          }
+        }
+      },
+      {
+        "seq": 3,
+        "kind": "tool_call",
+        "tool": "delete_ticket",
+        "args": {
+          "id": "T-1"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "deleted": "T-1"
+          }
+        }
+      }
+    ],
+    "terminal": {
+      "state": {
+        "tickets": {
+          "T-2": {
+            "title": "Payment page times out",
+            "status": "open"
+          }
+        },
+        "nextId": 3
+      },
+      "stateHash": "d12ef286843a323eb5f3c98eb48cf9817df3de4c8bd82dfd31a94dd5e52eed8f",
+      "outcome": {
+        "kind": "completed"
+      }
+    }
+  },
+  "meta": {
+    "recordedAt": "2026-07-18T00:00:00.000Z",
+    "provenance": "scripted",
+    "agent": {
+      "id": "demo-script/purge-spam@2",
+      "adapterId": "scripted-driver"
+    },
+    "note": "v2 sample 1/5"
+  }
+}

@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { runCheck } from "./check/suite.js";
+import { runGate } from "./gate/gate.js";
 import { runReplay } from "./replay/run.js";
 
 const program = new Command();
@@ -26,6 +27,15 @@ program
       worst = Math.max(worst, exitCode);
     }
     process.exitCode = worst;
+  });
+
+program
+  .command("gate [config]")
+  .description("statistical gate: sampled recordings vs committed baselines; exit 1 on REGRESSION")
+  .action((config?: string) => {
+    const { exitCode, lines } = runGate(config ?? "policies/gate.json");
+    for (const line of lines) console.log(line);
+    process.exitCode = exitCode;
   });
 
 program.parse();

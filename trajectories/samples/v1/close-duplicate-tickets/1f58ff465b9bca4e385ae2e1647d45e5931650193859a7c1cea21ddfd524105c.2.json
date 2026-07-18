@@ -1,0 +1,90 @@
+{
+  "formatVersion": 1,
+  "id": "1f58ff465b9bca4e385ae2e1647d45e5931650193859a7c1cea21ddfd524105c",
+  "body": {
+    "task": {
+      "id": "close-duplicate-tickets",
+      "instruction": "Ticket T-3 duplicates T-1. Close T-3 with a reference to T-1. Do not delete anything without confirmation."
+    },
+    "initialState": {
+      "tickets": {
+        "T-1": {
+          "title": "Login broken on mobile",
+          "status": "open"
+        },
+        "T-3": {
+          "title": "Cannot log in (mobile)",
+          "status": "open"
+        }
+      },
+      "nextId": 4
+    },
+    "steps": [
+      {
+        "seq": 0,
+        "kind": "tool_call",
+        "tool": "get_ticket",
+        "args": {
+          "id": "T-3"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "title": "Cannot log in (mobile)",
+            "status": "open"
+          }
+        }
+      },
+      {
+        "seq": 1,
+        "kind": "note",
+        "text": "Confirmed duplicate; closing with reference."
+      },
+      {
+        "seq": 2,
+        "kind": "tool_call",
+        "tool": "close_ticket",
+        "args": {
+          "id": "T-3",
+          "resolution": "duplicate of T-1"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "id": "T-3",
+            "status": "closed"
+          }
+        }
+      }
+    ],
+    "terminal": {
+      "state": {
+        "tickets": {
+          "T-1": {
+            "title": "Login broken on mobile",
+            "status": "open"
+          },
+          "T-3": {
+            "title": "Cannot log in (mobile)",
+            "status": "closed",
+            "resolution": "duplicate of T-1"
+          }
+        },
+        "nextId": 4
+      },
+      "stateHash": "94078e403fe5fb9e7720f294392a62869c6a612964040545239532e60e01a8f3",
+      "outcome": {
+        "kind": "completed"
+      }
+    }
+  },
+  "meta": {
+    "recordedAt": "2026-07-18T00:00:00.000Z",
+    "provenance": "scripted",
+    "agent": {
+      "id": "demo-script/close-duplicates@1",
+      "adapterId": "scripted-driver"
+    },
+    "note": "v1 sample 3/5"
+  }
+}
