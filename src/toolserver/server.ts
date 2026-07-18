@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { JsonValue } from "../core/json.js";
+import { issuePaths } from "../core/zod-issues.js";
 import {
   sortTicketIds,
   ticketId,
@@ -87,18 +88,7 @@ export function executeTool(state: ToolServerState, call: ToolCall): ExecuteOutc
   const tool = call.tool as ToolName;
   const parsed = argSchemas[tool].safeParse(call.args);
   if (!parsed.success) {
-    // Paths only, never zod's message text: a zod upgrade must not be able
-    // to change recorded results. Unrecognized keys are reported by zod at
-    // the object root, so expand them into per-key paths.
-    const paths = [
-      ...new Set(
-        parsed.error.issues.flatMap((i) =>
-          i.code === "unrecognized_keys"
-            ? i.keys.map((k) => [...i.path, k].join("."))
-            : [i.path.join(".") || "$"],
-        ),
-      ),
-    ].sort();
+    const paths = issuePaths(parsed.error.issues);
     return {
       state,
       result: err("INVALID_ARGS", `invalid arguments for ${tool} at: ${paths.join(", ")}`),
