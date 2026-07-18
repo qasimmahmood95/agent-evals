@@ -1,7 +1,7 @@
 # ADR-0001: Trajectory fixture format
 
-- **Status:** Proposed — awaiting maintainer review; implementation blocked
-  until accepted (see docs/PLAN.md, M0).
+- **Status:** Accepted (maintainer sign-off 2026-07-18; open questions
+  resolved as recorded below).
 - **Date:** 2026-07-18
 
 ## Context
@@ -94,14 +94,14 @@ interface TrajectoryMeta {
 
 ### Example
 
-(Hash values are truncated placeholders pending implementation; M1 backfills
-the real computed values into this ADR in the same PR that lands canonical
-JSON — see docs/PLAN.md, M1 DoD.)
+(Hash values computed by the M1 implementation; `src/core/trajectory.test.ts`
+parses this exact block through the loader, so the example cannot drift from
+the schema.)
 
 ```json
 {
   "formatVersion": 1,
-  "id": "3f61c9…",
+  "id": "1f58ff465b9bca4e385ae2e1647d45e5931650193859a7c1cea21ddfd524105c",
   "body": {
     "task": {
       "id": "close-duplicate-tickets",
@@ -132,7 +132,7 @@ JSON — see docs/PLAN.md, M1 DoD.)
         },
         "nextId": 4
       },
-      "stateHash": "9b2ee1…",
+      "stateHash": "94078e403fe5fb9e7720f294392a62869c6a612964040545239532e60e01a8f3",
       "outcome": { "kind": "completed" }
     }
   },
@@ -232,19 +232,23 @@ Consequences of the replay contract, both deliberate:
   loses ordering and allowlist verification entirely — the confirmation-
   before-destruction property is invisible in a terminal snapshot.
 
-## Open questions for review
+## Open questions — resolved at sign-off (2026-07-18)
 
 1. Is `trajectories/<task.id>/<id>.json` the right layout, or is a flat
    content-addressed directory (llm-evals-ts style) with a manifest
-   preferable?
+   preferable? **Resolved: per-task directories.** These fixtures are a
+   human review surface, and the file count per directory being the visible
+   sample size n is a property worth keeping; the flat layout suits
+   request-keyed mechanical lookup, which is not our case.
 2. Should `NoteStep` exist at all in v1, and should its text be inside the
    hashed body? Notes are nondeterministic model prose, so two runs with
    identical tool behaviour but different reasoning get different ids.
-   (Current position: keep notes, keep them hashed — id means "this exact
+   **Resolved: keep notes, keep them hashed** — id means "this exact
    recorded run", not "this tool behaviour"; nothing downstream depends on
    id equality across runs, since n counts files, not distinct ids. The
    leaner alternative — exclude notes from the hash — buys nothing except a
-   subtler identity rule.)
+   subtler identity rule.
 3. Should `initialState` support referencing a named shared scenario file to
-   deduplicate snapshots across a task's samples? (Current position: no —
-   self-containment beats deduplication at this scale.)
+   deduplicate snapshots across a task's samples? **Resolved: no** —
+   self-containment beats deduplication at this scale; one file is the
+   whole story, replayable in isolation.
