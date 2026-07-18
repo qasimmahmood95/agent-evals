@@ -1,0 +1,23 @@
+{
+  "name": "agent-evals",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic, replayable, CI-safe testing for agent tool-call trajectories: committed content-addressed fixtures, offline effect replay, trajectory policy checks, statistically grounded verdicts.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
