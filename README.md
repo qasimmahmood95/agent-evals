@@ -7,9 +7,11 @@ unit under test is a tool-call trajectory with side effects, and it deserves
 the same discipline — committed fixtures, offline replay, zero-key CI, and
 statistical verdicts where live runs are sampled.
 
-**Status: design review (M0).** No implementation yet, deliberately — the
-trajectory fixture format is the product, and it gets signed off before code
-depends on it. Start here:
+**Status: M2.** The determinism spine, recorder, and offline effect replay
+are in: committed trajectory fixtures under `trajectories/` reproduce
+themselves in CI from a clean clone (`npm run replay`), with the ADR-0001
+example itself committed as a replaying fixture. Policy checks (M3) and the
+statistical gate (M4) are next. Start here:
 
 - [docs/PLAN.md](docs/PLAN.md) — milestone plan and definitions of done
 - [ADR-0001](docs/adr/0001-trajectory-fixture-format.md) — the trajectory
