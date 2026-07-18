@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "cli": "tsx src/cli.ts",
     "replay": "tsx src/cli.ts replay",
-    "fixtures:author": "tsx scripts/author-fixtures.ts"
+    "fixtures:author": "tsx scripts/author-fixtures.ts",
+    "check": "tsx src/cli.ts check policies/demo-core.suite.json policies/adversarial.suite.json"
   },
   "dependencies": {
     "commander": "^15.0.0",
