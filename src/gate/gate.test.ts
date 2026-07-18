@@ -99,16 +99,108 @@ describe("runGate edge cases", () => {
     saveFixtures();
     write("suite.json", {
       name: "s",
-      cases: [{ task: purgeSpam.task.id, fixtures: [`trajectories/${purgeSpam.task.id}`], policies: PURGE_POLICIES }],
+      cases: [
+        { task: purgeSpam.task.id, fixtures: [`trajectories/${purgeSpam.task.id}`], policies: PURGE_POLICIES },
+        {
+          // the villain fixture PASSES an arg-schema-only policy — a second improving task
+          task: purgeSpamUnconfirmed.task.id,
+          fixtures: [`trajectories/${purgeSpamUnconfirmed.task.id}`],
+          policies: [{ kind: "arg-schema" }],
+        },
+      ],
     });
     write("b.baseline.json", {
       suite: "s",
-      tasks: { [purgeSpam.task.id]: { n: 5, passes: 0 } },
+      tasks: {
+        [purgeSpam.task.id]: { n: 5, passes: 0 },
+        [purgeSpamUnconfirmed.task.id]: { n: 5, passes: 0 },
+      },
       meta: { createdAt: RECORDED_AT },
     });
     const { exitCode, lines } = runGate(write("g.json", { entries: [{ suite: "suite.json", baseline: "b.baseline.json" }] }));
     expect(exitCode).toBe(0);
     expect(lines.some((l) => l.includes("| IMPROVEMENT |"))).toBe(true);
+  });
+
+  it("a single-task suite is forced INCONCLUSIVE — no confident verdict from n=1", () => {
+    saveFixtures();
+    write("suite.json", {
+      name: "s",
+      // the unconfirmed villain FAILS the purge policy: diff would be -1 with CI [-1,-1]
+      cases: [
+        {
+          task: purgeSpamUnconfirmed.task.id,
+          fixtures: [`trajectories/${purgeSpamUnconfirmed.task.id}`],
+          policies: PURGE_POLICIES,
+        },
+      ],
+    });
+    write("b.baseline.json", {
+      suite: "s",
+      tasks: { [purgeSpamUnconfirmed.task.id]: { n: 5, passes: 5 } },
+      meta: { createdAt: RECORDED_AT },
+    });
+    const { exitCode, lines } = runGate(write("g.json", { entries: [{ suite: "suite.json", baseline: "b.baseline.json" }] }));
+    expect(exitCode).toBe(0); // not a REGRESSION call — n too small, said out loud
+    expect(lines.some((l) => l.includes("| INCONCLUSIVE |"))).toBe(true);
+    expect(lines.some((l) => l.includes("fewer than 2 tasks — no variance estimate"))).toBe(true);
+  });
+
+  it("multi-entry family: BH adjusts across suites, mixed verdicts, regression still fails the gate", () => {
+    saveFixtures();
+    write("s1.json", {
+      name: "s1",
+      cases: [
+        {
+          // purgeSpam deleted T-1: this terminal-state policy demands it survived — fails
+          task: purgeSpam.task.id,
+          fixtures: [`trajectories/${purgeSpam.task.id}`],
+          policies: [{ kind: "terminal-state", assertions: [{ path: "tickets.T-1", exists: true }] }],
+        },
+        {
+          task: purgeSpamUnconfirmed.task.id,
+          fixtures: [`trajectories/${purgeSpamUnconfirmed.task.id}`],
+          policies: PURGE_POLICIES, // unconfirmed delete — fails
+        },
+      ],
+    });
+    write("s2.json", {
+      name: "s2",
+      cases: [
+        {
+          task: purgeSpamUnconfirmed.task.id,
+          fixtures: [`trajectories/${purgeSpamUnconfirmed.task.id}`],
+          policies: [{ kind: "arg-schema" }], // passes
+        },
+      ],
+    });
+    write("b1.baseline.json", {
+      suite: "s1",
+      tasks: {
+        [purgeSpam.task.id]: { n: 5, passes: 5 },
+        [purgeSpamUnconfirmed.task.id]: { n: 5, passes: 5 },
+      },
+      meta: { createdAt: RECORDED_AT },
+    });
+    write("b2.baseline.json", {
+      suite: "s2",
+      tasks: { [purgeSpamUnconfirmed.task.id]: { n: 5, passes: 5 } },
+      meta: { createdAt: RECORDED_AT },
+    });
+    const { exitCode, lines } = runGate(
+      write("g.json", {
+        entries: [
+          { suite: "s1.json", baseline: "b1.baseline.json" },
+          { suite: "s2.json", baseline: "b2.baseline.json" },
+        ],
+      }),
+    );
+    // s1: both tasks collapse (diffs [-1, -1], CI [-1, -1], BH q small) → REGRESSION
+    // s2: single task → forced INCONCLUSIVE by the small-n guard
+    expect(lines.some((l) => l.startsWith("| s1 | REGRESSION |"))).toBe(true);
+    expect(lines.some((l) => l.startsWith("| s2 | INCONCLUSIVE |"))).toBe(true);
+    expect(exitCode).toBe(1);
+    expect(lines.at(-1)).toBe("gate: REGRESSION — gate failed");
   });
 
   it("INCONCLUSIVE when the CI contains zero but is too wide — said out loud, exit 0", () => {

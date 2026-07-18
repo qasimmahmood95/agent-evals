@@ -88,7 +88,7 @@ Three things worth noticing:
 | `REGRESSION` | 95% CI on the paired per-task difference entirely below zero, BH-confirmed across the gate family |
 | `IMPROVEMENT` | CI entirely above zero, BH-confirmed |
 | `PASS` | CI contains zero *and* is narrow enough to certify precision (half-width ≤ 0.1) |
-| `INCONCLUSIVE` | CI contains zero but is too wide — usually "n is too small", said out loud |
+| `INCONCLUSIVE` | everything else, said out loud: CI contains zero but is too wide; CI excludes zero but BH does not confirm it across the family; or the suite has fewer than 2 tasks (no variance estimate — the gate refuses to certify one observation) |
 
 Comparisons are paired per task — the variance reduction that lets a
 4-task demo reach a defensible verdict at all. The demo's interval is

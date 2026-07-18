@@ -13,8 +13,15 @@ import { wilson } from "../stats/wilson.js";
  * `REGRESSION` only when the paired-bootstrap 95% CI on the mean per-task
  * difference excludes zero AND the Benjamini–Hochberg-adjusted q across
  * the gate family clears α; `PASS` additionally requires the CI narrow
- * enough to certify precision (half-width ≤ 0.1); a CI containing zero
- * but wider than that is `INCONCLUSIVE`, said out loud.
+ * enough to certify precision (half-width ≤ 0.1). `INCONCLUSIVE` covers
+ * every remaining case, said out loud: a CI containing zero but too wide,
+ * a CI excluding zero that BH does not confirm across the family, and a
+ * suite with fewer than two tasks (a variance estimate from n=1 is
+ * undefined — the gate refuses a confident verdict rather than certify
+ * one observation).
+ *
+ * Only suites whose statistics exist enter the BH family — an
+ * integrity-failed suite is not a hypothesis.
  *
  * Exit codes: 0 no regression (INCONCLUSIVE reported loudly but passes),
  * 1 any REGRESSION or any integrity failure, 2 configuration error.
@@ -157,14 +164,16 @@ export function runGate(configPath: string): GateRunResult {
     });
   }
 
-  // family-wide multiplicity adjustment across all gated suites
+  // family-wide multiplicity adjustment — only over suites whose
+  // statistics exist; an integrity-failed suite is not a hypothesis
   const stats = entries.map((e) =>
     e.verdictInput
       ? pairedMeanDiffCI(e.verdictInput.diffs, { B: config.bootstrapB, seed: config.seed })
       : undefined,
   );
-  const pValues = stats.map((s) => s?.pValue ?? 1);
-  const qValues = benjaminiHochberg(pValues);
+  const definedIndices = stats.flatMap((s, i) => (s ? [i] : []));
+  const qs = benjaminiHochberg(definedIndices.map((i) => (stats[i] as { pValue: number }).pValue));
+  const qByIndex = new Map<number, number>(definedIndices.map((idx, j) => [idx, qs[j] as number]));
 
   lines.push(`# gate (α=${config.alpha}, B=${config.bootstrapB}, seed=${config.seed})`);
   lines.push("");
@@ -172,15 +181,19 @@ export function runGate(configPath: string): GateRunResult {
   lines.push("|---|---|---|---|---|---|");
 
   let anyRegression = false;
+  const smallN: string[] = [];
   for (const [i, entry] of entries.entries()) {
     const s = stats[i];
     if (!entry.verdictInput || !s) {
       lines.push(`| ${entry.suiteName} | INTEGRITY FAIL | — | — | — | — |`);
       continue;
     }
-    const q = qValues[i] as number;
+    const q = qByIndex.get(i) as number;
     let verdict: Verdict;
-    if (s.upper < 0 && q <= config.alpha) verdict = "REGRESSION";
+    if (s.n < 2) {
+      verdict = "INCONCLUSIVE";
+      smallN.push(entry.suiteName);
+    } else if (s.upper < 0 && q <= config.alpha) verdict = "REGRESSION";
     else if (s.lower > 0 && q <= config.alpha) verdict = "IMPROVEMENT";
     else if (s.lower <= 0 && s.upper >= 0 && (s.upper - s.lower) / 2 <= config.passHalfWidth) verdict = "PASS";
     else verdict = "INCONCLUSIVE";
@@ -206,6 +219,9 @@ export function runGate(configPath: string): GateRunResult {
         );
       }
     }
+  }
+  for (const name of smallN) {
+    lines.push(`note: ${name}: fewer than 2 tasks — no variance estimate; verdict forced INCONCLUSIVE`);
   }
   lines.push("");
   lines.push(

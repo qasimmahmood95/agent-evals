@@ -92,7 +92,7 @@
     "recordedAt": "2026-07-18T00:00:00.000Z",
     "provenance": "scripted",
     "agent": {
-      "id": "demo-script/purge-spam@1",
+      "id": "demo-script/purge-spam@2",
       "adapterId": "scripted-driver"
     },
     "note": "v2 sample 2/5"

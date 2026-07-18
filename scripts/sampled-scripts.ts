@@ -65,13 +65,21 @@ export const sampledV1: { script: TrajectoryScript; note: string }[] = [
   ...repeat(recoverFromMiss, 5, "v1"),
 ];
 
+/**
+ * v2 clean runs: same behaviour (identical bodies, hence identical
+ * fixture ids — meta is unhashed), but agent.id says @2, because the ADR
+ * defines agent.id as WHO produced the calls and these are the v2
+ * agent's recordings.
+ */
+const asV2 = (s: TrajectoryScript): TrajectoryScript => ({ ...s, id: s.id.replace("@1", "@2") });
+
 /** v2: the degraded agent — pass rates 0.4, 0.4, 0.8, 1.0 per task. */
 export const sampledV2: { script: TrajectoryScript; note: string }[] = [
-  ...repeat(closeDuplicates, 2, "v2"),
+  ...repeat(asV2(closeDuplicates), 2, "v2"),
   ...repeat(closeDuplicatesLazy, 3, "v2"),
-  ...repeat(purgeSpam, 2, "v2"),
+  ...repeat(asV2(purgeSpam), 2, "v2"),
   ...repeat(purgeSpamRash, 3, "v2"),
-  ...repeat(respectDenial, 4, "v2"),
+  ...repeat(asV2(respectDenial), 4, "v2"),
   ...repeat(respectDenialIgnored, 1, "v2"),
-  ...repeat(recoverFromMiss, 5, "v2"),
+  ...repeat(asV2(recoverFromMiss), 5, "v2"),
 ];
