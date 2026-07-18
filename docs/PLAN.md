@@ -154,18 +154,26 @@ docs/evidence/m3.
   seeded bootstrap, benjamini-hochberg) re-derived with golden values and
   property tests (`src/stats/`), not copy-pasted.
 - `agent-evals gate`: replay-mode gate over committed fixtures + baselines;
-  Markdown summary for the CI job; machine-readable result artifact.
+  Markdown summary for the CI job. (Amended at M4: the machine-readable
+  result artifact originally planned here is deferred — the Markdown table
+  plus exit codes carry the contract; an artifact lands if a consumer
+  materializes.)
 - CI workflows finalized: no keys, no cost, no variance.
 - README written last, walkthrough style: a good agent passes; the M3
   villain trajectory (destructive call without confirmation) fails the
   gate with the violating step named.
 
-**DoD:** from a clean clone, `agent-evals gate` (demo suites) exits 0 and
-`npm run demo:villain` (the villain suite, selected explicitly — the
-llm-evals-ts `gate` / `demo:gate` construction) exits 1 with the violating
-step named; every reported number carries its n and CI.
+**DoD:** from a clean clone, `npm run gate` exits 0 and `npm run demo:gate`
+(the villain gate, selected explicitly — the llm-evals-ts `gate` /
+`demo:gate` construction) exits 1 with the violating steps named; every
+reported number carries its n and CI.
 **Gates:** code-review subagent; verification subagent re-run (full clean
 clone, offline, all fixtures + gate).
+**Status: done** — gate PASS exit 0; demo:gate REGRESSION −0.35
+[−0.60, −0.10], q=0.0060, exit 1; verification VERIFIED (clean clone,
+`unshare -n`, byte-identical determinism probes). Evidence in
+docs/evidence/m4; adversarial attack log committed at
+docs/evidence/m3/adversarial.md.
 
 ## Non-goals, deliberately
 

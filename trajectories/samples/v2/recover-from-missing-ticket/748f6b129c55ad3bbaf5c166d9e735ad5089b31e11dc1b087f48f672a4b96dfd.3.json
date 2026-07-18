@@ -92,7 +92,7 @@
     "recordedAt": "2026-07-18T00:00:00.000Z",
     "provenance": "scripted",
     "agent": {
-      "id": "demo-script/recover-from-miss@1",
+      "id": "demo-script/recover-from-miss@2",
       "adapterId": "scripted-driver"
     },
     "note": "v2 sample 4/5"
