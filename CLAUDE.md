@@ -115,8 +115,8 @@ npm test              # offline-safe unit + property tests
 npm run typecheck     # tsc --noEmit
 npm run replay        # effect-replay every committed fixture (exit 0/1/2)
 npm run check         # policy suites: demo-core clean + adversarial catches all villains
-npm run fixtures:author  # regenerate all scripted fixtures incl. villains (byte-identical)
+npm run gate          # statistical gate vs committed baseline (exit 0)
+npm run demo:gate     # the villain gate — REGRESSION, exit 1, on purpose
+npm run fixtures:author  # regenerate all scripted fixtures (byte-identical)
+npm run baseline:author  # regenerate the committed baseline (deliberate, reviewed)
 ```
-
-`gate` lands with M4 and is added here when it exists — this file never
-advertises a command that doesn't run.
