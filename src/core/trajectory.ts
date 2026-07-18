@@ -4,7 +4,7 @@ import type { JsonValue } from "./json.js";
 
 /**
  * The trajectory fixture format, per ADR-0001. zod owns shape; hash
- * *correctness* (id, terminal.stateHash) is loader logic — see
+ * *correctness* (id, terminal.stateHash) is loader logic - see
  * parseTrajectoryFixture.
  */
 
@@ -115,7 +115,7 @@ export function computeStateHash(state: JsonValue): string {
   return hashJson(state);
 }
 
-/** Shape violation (zod) — carries field-level issue paths. */
+/** Shape violation (zod) - carries field-level issue paths. */
 export class FixtureShapeError extends Error {
   constructor(readonly issues: readonly { path: string; message: string }[]) {
     super(`invalid trajectory fixture:\n${issues.map((i) => `  ${i.path}: ${i.message}`).join("\n")}`);
@@ -123,7 +123,7 @@ export class FixtureShapeError extends Error {
   }
 }
 
-/** Stored hash disagrees with recomputation — the fixture is not trusted. */
+/** Stored hash disagrees with recomputation - the fixture is not trusted. */
 export class FixtureIntegrityError extends Error {
   constructor(
     readonly field: "id" | "terminal.stateHash",

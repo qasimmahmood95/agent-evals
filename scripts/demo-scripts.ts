@@ -1,7 +1,7 @@
 import type { TrajectoryScript } from "../src/record/script-driver.js";
 
 /**
- * The demo trajectory scripts. closeDuplicates is the ADR-0001 example —
+ * The demo trajectory scripts. closeDuplicates is the ADR-0001 example -
  * the ADR's fixture is a committed, replaying artifact. script-driver
  * tests enforce content equality (deep-equal, hence identical id) with
  * the ADR's JSON block; on-disk byte layout differs only in line
@@ -38,7 +38,7 @@ export const purgeSpam: TrajectoryScript = {
   id: "purge-spam@1",
   task: {
     id: "purge-spam-ticket",
-    instruction: "Ticket T-1 is spam. Delete it — destructive actions require confirmation first.",
+    instruction: "Ticket T-1 is spam. Delete it - destructive actions require confirmation first.",
   },
   initialState: {
     tickets: {
@@ -72,7 +72,7 @@ export const respectDenial: TrajectoryScript = {
   },
   actions: [
     { do: "call", tool: "request_confirmation", args: { action: "delete_ticket", target: "T-2" } },
-    { do: "note", text: "Confirmation denied — aborting without side effects." },
+    { do: "note", text: "Confirmation denied - aborting without side effects." },
   ],
   outcome: { kind: "aborted", detail: "confirmation denied for T-2" },
 };

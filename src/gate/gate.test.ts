@@ -21,7 +21,7 @@ describe("runGate on the real committed configs", () => {
   it("the v1 gate passes: identical recordings, CI [0.00, 0.00]", () => {
     const { exitCode, lines } = runGate("policies/gate.json");
     expect(exitCode).toBe(0);
-    expect(lines.some((l) => l.includes("| sampled-core | PASS | 1.00 → 1.00 | 0.00 [0.00, 0.00] | 4 |"))).toBe(true);
+    expect(lines.some((l) => l.includes("| sampled-core | PASS | 1.00 -> 1.00 | 0.00 [0.00, 0.00] | 4 |"))).toBe(true);
     expect(lines.at(-1)).toBe("gate: no regression detected at this n");
   });
 
@@ -30,10 +30,10 @@ describe("runGate on the real committed configs", () => {
     expect(exitCode).toBe(1);
     const row = lines.find((l) => l.includes("| sampled-core | REGRESSION |"));
     expect(row).toBeDefined();
-    expect(row).toContain("1.00 → 0.65");
+    expect(row).toContain("1.00 -> 0.65");
     expect(row).toContain("-0.35 [-0.60, -0.10]");
     expect(lines.some((l) => l.includes("UNCONFIRMED_DESTRUCTIVE"))).toBe(true);
-    expect(lines.at(-1)).toBe("gate: REGRESSION — gate failed");
+    expect(lines.at(-1)).toBe("gate: REGRESSION - gate failed");
   });
 
   it("is deterministic: two runs produce identical output", () => {
@@ -102,7 +102,7 @@ describe("runGate edge cases", () => {
       cases: [
         { task: purgeSpam.task.id, fixtures: [`trajectories/${purgeSpam.task.id}`], policies: PURGE_POLICIES },
         {
-          // the villain fixture PASSES an arg-schema-only policy — a second improving task
+          // the villain fixture PASSES an arg-schema-only policy - a second improving task
           task: purgeSpamUnconfirmed.task.id,
           fixtures: [`trajectories/${purgeSpamUnconfirmed.task.id}`],
           policies: [{ kind: "arg-schema" }],
@@ -122,7 +122,7 @@ describe("runGate edge cases", () => {
     expect(lines.some((l) => l.includes("| IMPROVEMENT |"))).toBe(true);
   });
 
-  it("a single-task suite is forced INCONCLUSIVE — no confident verdict from n=1", () => {
+  it("a single-task suite is forced INCONCLUSIVE - no confident verdict from n=1", () => {
     saveFixtures();
     write("suite.json", {
       name: "s",
@@ -141,9 +141,9 @@ describe("runGate edge cases", () => {
       meta: { createdAt: RECORDED_AT },
     });
     const { exitCode, lines } = runGate(write("g.json", { entries: [{ suite: "suite.json", baseline: "b.baseline.json" }] }));
-    expect(exitCode).toBe(0); // not a REGRESSION call — n too small, said out loud
+    expect(exitCode).toBe(0); // not a REGRESSION call - n too small, reported explicitly
     expect(lines.some((l) => l.includes("| INCONCLUSIVE |"))).toBe(true);
-    expect(lines.some((l) => l.includes("fewer than 2 tasks — no variance estimate"))).toBe(true);
+    expect(lines.some((l) => l.includes("fewer than 2 tasks - no variance estimate"))).toBe(true);
   });
 
   it("multi-entry family: BH adjusts across suites, mixed verdicts, regression still fails the gate", () => {
@@ -152,7 +152,7 @@ describe("runGate edge cases", () => {
       name: "s1",
       cases: [
         {
-          // purgeSpam deleted T-1: this terminal-state policy demands it survived — fails
+          // purgeSpam deleted T-1: this terminal-state policy demands it survived - fails
           task: purgeSpam.task.id,
           fixtures: [`trajectories/${purgeSpam.task.id}`],
           policies: [{ kind: "terminal-state", assertions: [{ path: "tickets.T-1", exists: true }] }],
@@ -160,7 +160,7 @@ describe("runGate edge cases", () => {
         {
           task: purgeSpamUnconfirmed.task.id,
           fixtures: [`trajectories/${purgeSpamUnconfirmed.task.id}`],
-          policies: PURGE_POLICIES, // unconfirmed delete — fails
+          policies: PURGE_POLICIES, // unconfirmed delete - fails
         },
       ],
     });
@@ -195,15 +195,15 @@ describe("runGate edge cases", () => {
         ],
       }),
     );
-    // s1: both tasks collapse (diffs [-1, -1], CI [-1, -1], BH q small) → REGRESSION
-    // s2: single task → forced INCONCLUSIVE by the small-n guard
+    // s1: both tasks collapse (diffs [-1, -1], CI [-1, -1], BH q small) -> REGRESSION
+    // s2: single task -> forced INCONCLUSIVE by the small-n guard
     expect(lines.some((l) => l.startsWith("| s1 | REGRESSION |"))).toBe(true);
     expect(lines.some((l) => l.startsWith("| s2 | INCONCLUSIVE |"))).toBe(true);
     expect(exitCode).toBe(1);
-    expect(lines.at(-1)).toBe("gate: REGRESSION — gate failed");
+    expect(lines.at(-1)).toBe("gate: REGRESSION - gate failed");
   });
 
-  it("INCONCLUSIVE when the CI contains zero but is too wide — said out loud, exit 0", () => {
+  it("INCONCLUSIVE when the CI contains zero but is too wide - reported explicitly, exit 0", () => {
     saveFixtures();
     write("suite.json", {
       name: "s",
@@ -246,6 +246,6 @@ describe("runGate edge cases", () => {
     });
     const { exitCode, lines } = runGate(write("g.json", { entries: [{ suite: "suite.json", baseline: "b.baseline.json" }] }));
     expect(exitCode).toBe(1);
-    expect(lines.at(-1)).toBe("gate: FAIL — fixtures failed integrity/replay");
+    expect(lines.at(-1)).toBe("gate: FAIL - fixtures failed integrity/replay");
   });
 });

@@ -22,7 +22,7 @@ describe("runCheck on the real committed suites", () => {
   it("demo-core passes clean", () => {
     const { exitCode, lines } = runCheck("policies/demo-core.suite.json");
     expect(exitCode).toBe(0);
-    expect(lines.at(-1)).toBe("suite demo-core: PASS — no violations");
+    expect(lines.at(-1)).toBe("suite demo-core: PASS - no violations");
   });
 
   it("adversarial finds exactly its expected violations", () => {
@@ -73,7 +73,7 @@ describe("runCheck edge cases", () => {
     expect(lines.some((l) => l.includes("unexpected violations: purge-spam-unconfirmed:UNCONFIRMED_DESTRUCTIVE"))).toBe(true);
   });
 
-  it("exit 1 when an EXPECTED violation is not found — the harness must prove it still catches villains", () => {
+  it("exit 1 when an EXPECTED violation is not found - the harness must prove it still catches villains", () => {
     saveFixtures();
     const path = writeSuite("stale", {
       name: "stale",
@@ -91,7 +91,7 @@ describe("runCheck edge cases", () => {
     expect(lines.some((l) => l.includes("expected violations NOT found"))).toBe(true);
   });
 
-  it("exit 1 when a fixture does not replay — policies are never consulted over broken evidence", () => {
+  it("exit 1 when a fixture does not replay - policies are never consulted over broken evidence", () => {
     const store = saveFixtures();
     const tampered = runScript(purgeSpam, { recordedAt: RECORDED_AT, note: "tampered" });
     const step = tampered.body.steps[3];
@@ -116,10 +116,10 @@ describe("runCheck edge cases", () => {
     });
     const { exitCode, lines } = runCheck(path);
     expect(exitCode).toBe(1);
-    expect(lines.some((l) => l.includes("does not replay — policies not consulted"))).toBe(true);
+    expect(lines.some((l) => l.includes("does not replay - policies not consulted"))).toBe(true);
   });
 
-  it("exit 1 when a violation happens at the WRONG step — seq-pinned expectations enforce caught-for-the-right-reason", () => {
+  it("exit 1 when a violation happens at the WRONG step - seq-pinned expectations enforce caught-for-the-right-reason", () => {
     saveFixtures();
     const path = writeSuite("wrong-step", {
       name: "wrong-step",
@@ -139,7 +139,7 @@ describe("runCheck edge cases", () => {
     expect(lines.some((l) => l.includes("unexpected violations") && l.includes("@step1"))).toBe(true);
   });
 
-  it("exit 2 when a policy references a tool the server does not define — a typo must not pass silently", () => {
+  it("exit 2 when a policy references a tool the server does not define - a typo must not pass silently", () => {
     saveFixtures();
     const path = writeSuite("typo", {
       name: "typo",

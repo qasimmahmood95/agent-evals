@@ -73,7 +73,7 @@ describe("ordering", () => {
       { id: "demo-task", instruction: "x" },
       { tickets: { "T-1": { title: "a", status: "open" } }, nextId: 2 },
     );
-    const bad = recorder.call("get_ticket", { id: "T-1", bogus: 1 }); // INVALID_ARGS — nothing was read
+    const bad = recorder.call("get_ticket", { id: "T-1", bogus: 1 }); // INVALID_ARGS - nothing was read
     expect(bad.ok).toBe(false);
     recorder.call("update_ticket", { id: "T-1", title: "renamed" });
     const fixture = recorder.finish(
@@ -120,7 +120,7 @@ describe("allowlist", () => {
     expect(findings).toMatchObject([{ code: "UNCONFIRMED_DESTRUCTIVE", seq: 1 }]);
   });
 
-  it("a DENIED confirmation does not license destruction — server truth, not agent claim", () => {
+  it("a DENIED confirmation does not license destruction - server truth, not agent claim", () => {
     const findings = checkFixture(fixtureOf(purgeSpamIgnoreDenial), [purgeAllowlist]);
     expect(findings).toMatchObject([{ code: "UNCONFIRMED_DESTRUCTIVE", seq: 2 }]);
   });

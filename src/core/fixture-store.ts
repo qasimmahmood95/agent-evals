@@ -6,8 +6,8 @@ import { parseTrajectoryFixture, type TrajectoryFixture } from "./trajectory.js"
  * Content-addressed fixture store, per ADR-0001.
  *
  * Layout: <root>/<task.id>/<id>.json with occurrence suffixes
- * (<id>.1.json, <id>.2.json, …) for repeat recordings whose bodies are
- * identical. Existing files are NEVER overwritten — every recording is a
+ * (<id>.1.json, <id>.2.json, ...) for repeat recordings whose bodies are
+ * identical. Existing files are NEVER overwritten - every recording is a
  * new file, so the file count per task directory is the visible sample
  * size n, whether or not sampled runs happened to be identical.
  */
@@ -26,8 +26,8 @@ export class FixtureStore {
   /**
    * Persist a fixture as a new file, never overwriting: an id already on
    * disk gets the next free occurrence slot, with its own meta. The write
-   * path runs the FULL parse — shape (including the filesystem-safe task-id
-   * pattern) and both hash recomputations — so the store can neither write
+   * path runs the FULL parse - shape (including the filesystem-safe task-id
+   * pattern) and both hash recomputations - so the store can neither write
    * a lie nor write outside its root. Exclusive-create ("wx") makes the
    * occurrence slot claim atomic: a concurrent save of the same body loses
    * the slot with EEXIST and takes the next one, never overwrites.

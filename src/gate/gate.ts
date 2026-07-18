@@ -9,18 +9,18 @@ import { wilson } from "../stats/wilson.js";
 
 /**
  * The gate: current policy pass rates per task, compared against a
- * committed baseline, judged under llm-evals-ts verdict rules —
+ * committed baseline, judged under llm-evals-ts verdict rules -
  * `REGRESSION` only when the paired-bootstrap 95% CI on the mean per-task
- * difference excludes zero AND the Benjamini–Hochberg-adjusted q across
- * the gate family clears α; `PASS` additionally requires the CI narrow
- * enough to certify precision (half-width ≤ 0.1). `INCONCLUSIVE` covers
- * every remaining case, said out loud: a CI containing zero but too wide,
+ * difference excludes zero AND the Benjamini-Hochberg-adjusted q across
+ * the gate family clears alpha; `PASS` additionally requires the CI narrow
+ * enough to certify precision (half-width <= 0.1). `INCONCLUSIVE` covers
+ * every remaining case, reported explicitly: a CI containing zero but too wide,
  * a CI excluding zero that BH does not confirm across the family, and a
  * suite with fewer than two tasks (a variance estimate from n=1 is
- * undefined — the gate refuses a confident verdict rather than certify
+ * undefined - the gate refuses a confident verdict rather than certify
  * one observation).
  *
- * Only suites whose statistics exist enter the BH family — an
+ * Only suites whose statistics exist enter the BH family - an
  * integrity-failed suite is not a hypothesis.
  *
  * Exit codes: 0 no regression (INCONCLUSIVE reported loudly but passes),
@@ -130,7 +130,7 @@ export function runGate(configPath: string): GateRunResult {
       return {
         exitCode: 2,
         lines: [
-          `gate: task sets differ — paired comparison undefined`,
+          `gate: task sets differ - paired comparison undefined`,
           `      now:      ${nowTasks.join(", ")}`,
           `      baseline: ${baselineTasks.join(", ")}`,
         ],
@@ -164,7 +164,7 @@ export function runGate(configPath: string): GateRunResult {
     });
   }
 
-  // family-wide multiplicity adjustment — only over suites whose
+  // family-wide multiplicity adjustment - only over suites whose
   // statistics exist; an integrity-failed suite is not a hypothesis
   const stats = entries.map((e) =>
     e.verdictInput
@@ -175,9 +175,9 @@ export function runGate(configPath: string): GateRunResult {
   const qs = benjaminiHochberg(definedIndices.map((i) => (stats[i] as { pValue: number }).pValue));
   const qByIndex = new Map<number, number>(definedIndices.map((idx, j) => [idx, qs[j] as number]));
 
-  lines.push(`# gate (α=${config.alpha}, B=${config.bootstrapB}, seed=${config.seed})`);
+  lines.push(`# gate (alpha=${config.alpha}, B=${config.bootstrapB}, seed=${config.seed})`);
   lines.push("");
-  lines.push("| Suite | Verdict | Pass rate | Δ [95% CI] | n tasks | q (BH) |");
+  lines.push("| Suite | Verdict | Pass rate | Diff [95% CI] | n tasks | q (BH) |");
   lines.push("|---|---|---|---|---|---|");
 
   let anyRegression = false;
@@ -185,7 +185,7 @@ export function runGate(configPath: string): GateRunResult {
   for (const [i, entry] of entries.entries()) {
     const s = stats[i];
     if (!entry.verdictInput || !s) {
-      lines.push(`| ${entry.suiteName} | INTEGRITY FAIL | — | — | — | — |`);
+      lines.push(`| ${entry.suiteName} | INTEGRITY FAIL | - | - | - | - |`);
       continue;
     }
     const q = qByIndex.get(i) as number;
@@ -200,7 +200,7 @@ export function runGate(configPath: string): GateRunResult {
     if (verdict === "REGRESSION") anyRegression = true;
     const v = entry.verdictInput;
     lines.push(
-      `| ${entry.suiteName} | ${verdict} | ${fmt(v.rateBaseline)} → ${fmt(v.rateNow)} | ${fmt(s.mean)} [${fmt(s.lower)}, ${fmt(s.upper)}] | ${s.n} | ${q.toFixed(4)} |`,
+      `| ${entry.suiteName} | ${verdict} | ${fmt(v.rateBaseline)} -> ${fmt(v.rateNow)} | ${fmt(s.mean)} [${fmt(s.lower)}, ${fmt(s.upper)}] | ${s.n} | ${q.toFixed(4)} |`,
     );
   }
   lines.push("");
@@ -221,19 +221,19 @@ export function runGate(configPath: string): GateRunResult {
     }
   }
   for (const name of smallN) {
-    lines.push(`note: ${name}: fewer than 2 tasks — no variance estimate; verdict forced INCONCLUSIVE`);
+    lines.push(`note: ${name}: fewer than 2 tasks - no variance estimate; verdict forced INCONCLUSIVE`);
   }
   lines.push("");
   lines.push(
-    "note: replay mode — uncertainty reflects task sampling only; agent stochasticity is frozen at recording time",
+    "note: replay mode - uncertainty reflects task sampling only; agent stochasticity is frozen at recording time",
   );
 
   if (integrityFailed) {
-    lines.push("gate: FAIL — fixtures failed integrity/replay");
+    lines.push("gate: FAIL - fixtures failed integrity/replay");
     return { exitCode: 1, lines };
   }
   if (anyRegression) {
-    lines.push("gate: REGRESSION — gate failed");
+    lines.push("gate: REGRESSION - gate failed");
     return { exitCode: 1, lines };
   }
   lines.push("gate: no regression detected at this n");

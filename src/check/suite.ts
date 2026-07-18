@@ -11,15 +11,15 @@ import { checkFixture } from "./checkers.js";
 import { policySchema, violationCodes, type Policy } from "./policy.js";
 
 /**
- * A suite binds fixtures to policies and — for negative suites — to
+ * A suite binds fixtures to policies and - for negative suites - to
  * expected violations. Fixture paths are explicit (file or task
  * directory), resolved relative to the suite file: check never infers
  * scope by walking the trajectories tree (PLAN M3).
  *
  * Exit codes are contract: 0 findings match expectations exactly (a clean
  * suite expects none), 1 mismatch or any integrity failure, 2
- * configuration error. Integrity failures — a fixture that will not load
- * or replay — are never expectable: policies assert over evidence, and
+ * configuration error. Integrity failures - a fixture that will not load
+ * or replay - are never expectable: policies assert over evidence, and
  * broken evidence cannot be assented to.
  */
 
@@ -40,7 +40,7 @@ export const suiteSchema = z.strictObject({
       z.strictObject({
         task: z.string().min(1),
         code: z.enum(violationCodes),
-        /** pin the violation to a step — "caught for the right reason" */
+        /** pin the violation to a step - "caught for the right reason" */
         seq: z.number().int().nonnegative().optional(),
       }),
     )
@@ -60,7 +60,7 @@ function configError(lines: string[]): CheckRunResult {
 
 /**
  * Every tool name a policy references must exist on the server: a
- * misspelled matcher would otherwise match zero steps and pass silently —
+ * misspelled matcher would otherwise match zero steps and pass silently -
  * the "skipped is never a pass" failure mode, one typo away.
  */
 function unknownPolicyTools(policies: Policy[]): string[] {
@@ -77,7 +77,7 @@ function unknownPolicyTools(policies: Policy[]): string[] {
   return [...new Set(referenced.filter((t) => !known.has(t)))].sort();
 }
 
-/** Refs resolve relative to the suite file, including ../ — acceptable for
+/** Refs resolve relative to the suite file, including ../ - acceptable for
  * reviewed committed config driven by a local CLI. */
 function resolveFixtureFiles(suiteDir: string, ref: string): string[] | undefined {
   const path = resolve(suiteDir, ref);
@@ -158,7 +158,7 @@ export function evaluateSuite(suitePath: string): SuiteEvaluation {
       if (!files) {
         return {
           kind: "config-error",
-          lines: [`check: case ${suiteCase.task}: no fixtures at ${ref} — nothing to assert is not a pass`],
+          lines: [`check: case ${suiteCase.task}: no fixtures at ${ref} - nothing to assert is not a pass`],
         };
       }
       for (const file of files) {
@@ -180,7 +180,7 @@ export function evaluateSuite(suitePath: string): SuiteEvaluation {
         const replay = replayFixture(fixture);
         if (!replay.ok) {
           integrityFailures += 1;
-          lines.push(`FAIL  ${rel}\n      fixture does not replay — policies not consulted (${replay.divergence?.kind})`);
+          lines.push(`FAIL  ${rel}\n      fixture does not replay - policies not consulted (${replay.divergence?.kind})`);
           continue;
         }
         tally.files += 1;
@@ -234,14 +234,14 @@ export function runCheck(suitePath: string): CheckRunResult {
   missing.sort();
 
   if (integrityFailures > 0) {
-    lines.push(`suite ${suite.name}: FAIL — ${integrityFailures} fixture(s) failed integrity/replay`);
+    lines.push(`suite ${suite.name}: FAIL - ${integrityFailures} fixture(s) failed integrity/replay`);
     return { exitCode: 1, lines };
   }
   if (missing.length === 0 && unexpected.length === 0) {
     lines.push(
       expected.length === 0
-        ? `suite ${suite.name}: PASS — no violations`
-        : `suite ${suite.name}: PASS — all ${expected.length} expected violation(s) found, nothing else`,
+        ? `suite ${suite.name}: PASS - no violations`
+        : `suite ${suite.name}: PASS - all ${expected.length} expected violation(s) found, nothing else`,
     );
     return { exitCode: 0, lines };
   }

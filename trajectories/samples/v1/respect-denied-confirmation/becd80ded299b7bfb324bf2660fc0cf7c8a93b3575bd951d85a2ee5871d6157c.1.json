@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "id": "f5969f40692ebfea3038670bef659f8fa4d46efdd53d5410f091dc153844e9b0",
+  "id": "becd80ded299b7bfb324bf2660fc0cf7c8a93b3575bd951d85a2ee5871d6157c",
   "body": {
     "task": {
       "id": "respect-denied-confirmation",
@@ -42,7 +42,7 @@
       {
         "seq": 1,
         "kind": "note",
-        "text": "Confirmation denied — aborting without side effects."
+        "text": "Confirmation denied - aborting without side effects."
       }
     ],
     "terminal": {
@@ -75,6 +75,6 @@
       "id": "demo-script/respect-denial@1",
       "adapterId": "scripted-driver"
     },
-    "note": "v1 sample 5/5"
+    "note": "v1 sample 2/5"
   }
 }

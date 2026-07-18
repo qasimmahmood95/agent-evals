@@ -5,7 +5,7 @@ import { executeTool } from "../toolserver/server.js";
 import { toolServerStateSchema, type ToolServerState } from "../toolserver/state.js";
 
 /**
- * Effect replay — the integrity gate (ADR-0001). Hydrate a fresh server
+ * Effect replay - the integrity gate (ADR-0001). Hydrate a fresh server
  * from initialState, re-execute every tool_call in seq order against the
  * CURRENT tool server, and require every recomputed result and the final
  * state to equal the recording under canonical JSON. The first divergence
@@ -14,7 +14,7 @@ import { toolServerStateSchema, type ToolServerState } from "../toolserver/state
  *
  * PRECONDITION: the fixture came through parseTrajectoryFixture (every
  * path in run.ts and suite.ts does), which proved id and stateHash match
- * the content. replayFixture itself re-checks neither — its job is
+ * the content. replayFixture itself re-checks neither - its job is
  * proving the recorded content matches recomputed reality. Callers
  * passing hand-built literals get physics verification only.
  */
