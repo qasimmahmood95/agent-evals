@@ -94,6 +94,10 @@ interface TrajectoryMeta {
 
 ### Example
 
+(Hash values are truncated placeholders pending implementation; M1 backfills
+the real computed values into this ADR in the same PR that lands canonical
+JSON — see docs/PLAN.md, M1 DoD.)
+
 ```json
 {
   "formatVersion": 1,
@@ -144,23 +148,42 @@ interface TrajectoryMeta {
 ### Content addressing and file naming
 
 `id = sha256(canonicalJson(body))`. `meta` is excluded from the hash so
-re-recording an identical trajectory at a different time is the same
-fixture, and so timestamps can never smuggle nondeterminism into identity.
+timestamps can never smuggle nondeterminism into identity. The id exists
+for **integrity and stable naming, not deduplication**: zod validates the
+fixture's shape, and the loader recomputes both `id` and
+`terminal.stateHash` and rejects any file whose stored values disagree
+(hash *correctness* is loader logic — a schema can only check shape).
 
-Files live at `trajectories/<task.id>/<id>.json`, with occurrence suffixes
-for repeated recordings of *distinct* trajectories of the same task from
-sampled live runs following llm-evals-ts (`<id>.json` only — distinct runs
-have distinct bodies, hence distinct ids; the per-task directory is the
-grouping, and the file count per directory is the visible sample size n).
+Files live at `trajectories/<task.id>/<id>.json`. Every recording writes a
+new file, never overwrites: two sampled runs with distinct bodies get
+distinct ids; a repeat recording whose body is *identical* to an existing
+fixture gets an occurrence suffix (`<id>.1.json`, `<id>.2.json`, …) with
+its own `meta`. This adapts the llm-evals-ts occurrence argument to a
+different hash boundary — there the key covers the request, so k responses
+to one request need suffixes; here the hash covers the whole body, so
+suffixes are needed precisely when an agent behaves identically twice, and
+collapsing those runs into one file would both undercount n and hide the
+consistency it demonstrates. **The sample size n for a task is the file
+count in its directory**, regardless of how many distinct ids it contains.
 
 ### Replay semantics (the integrity gate)
 
 Effect replay hydrates a fresh tool server from `initialState`, re-executes
 each `tool_call` step's `(tool, args)` in `seq` order, and requires the
-recomputed result to equal the recorded `result` byte-for-byte under
-canonical JSON, and the final state to match `terminal.state` and
-`terminal.stateHash`. First divergence is a hard error naming the step.
-Consequences, both deliberate:
+recomputed result to equal the recorded `result` under canonical JSON, and
+the final state to match `terminal.state` and `terminal.stateHash`. First
+divergence is a hard error naming the step.
+
+Replay always runs against the **current** tool server. Argument validation
+is part of server semantics: malformed arguments yield a deterministic
+`ok: false` validation-error result at execution time, which records and
+replays like any other step. It follows that tightening a tool's schema
+after fixtures are recorded changes server behaviour and breaks replay for
+affected fixtures — that is the correct outcome (the evidence no longer
+matches the world), and the remedy is re-recording, disclosed in the PR
+that changes the schema.
+
+Consequences of the replay contract, both deliberate:
 
 - Recorded **error results are replayed too** — an agent that recovers from
   a failed call is a legitimate, testable trajectory.
@@ -214,9 +237,14 @@ Consequences, both deliberate:
 1. Is `trajectories/<task.id>/<id>.json` the right layout, or is a flat
    content-addressed directory (llm-evals-ts style) with a manifest
    preferable?
-2. Should `NoteStep` exist at all in v1, or is pure tool-call-only leaner?
-   (Current position: keep it — recorded reasoning makes fixtures reviewable
-   by humans, and it is mechanically inert.)
+2. Should `NoteStep` exist at all in v1, and should its text be inside the
+   hashed body? Notes are nondeterministic model prose, so two runs with
+   identical tool behaviour but different reasoning get different ids.
+   (Current position: keep notes, keep them hashed — id means "this exact
+   recorded run", not "this tool behaviour"; nothing downstream depends on
+   id equality across runs, since n counts files, not distinct ids. The
+   leaner alternative — exclude notes from the hash — buys nothing except a
+   subtler identity rule.)
 3. Should `initialState` support referencing a named shared scenario file to
    deduplicate snapshots across a task's samples? (Current position: no —
    self-containment beats deduplication at this scale.)
