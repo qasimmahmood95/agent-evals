@@ -1,6 +1,6 @@
 # ADR-0002: Replay-first, not live-first
 
-- **Status:** Proposed — awaiting maintainer review (see docs/PLAN.md, M0).
+- **Status:** Accepted (maintainer sign-off 2026-07-18).
 - **Date:** 2026-07-18
 
 ## Context

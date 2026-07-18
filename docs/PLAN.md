@@ -22,6 +22,10 @@ Implementation does not start until the fixture schema is signed off — the
 format is the product; churning it later invalidates committed fixtures.
 **Gate:** maintainer review is the gate at M0 (docs only, no diff to
 code-review); the subagent gates start at M1.
+**Status: done** — both ADRs Accepted 2026-07-18. Amendments at sign-off:
+CI lands with M1 scaffolding (it already did, below, now explicit), and the
+villain trajectory is authored at M3 alongside the allowlist policy rather
+than at M4, so the adversarial subagent attacks a real committed artifact.
 
 ## M1 — Determinism spine: format, store, toy tool server
 
@@ -113,6 +117,11 @@ network, replay all fixtures, confirm determinism from scratch.
   under `trajectories/adversarial/<task.id>/`, mirroring the standard
   layout one level down. Suites select fixtures explicitly by path — `check`
   and `gate` never infer scope by walking directories.
+- The **villain trajectory** ships here (moved from M4 at sign-off): a
+  committed adversarial fixture in which the agent calls `delete_ticket`
+  with no prior granted `request_confirmation` — replays clean, fails the
+  allowlist policy with the violating step named. M4 only wires it into the
+  gate's exit-code story.
 
 **DoD:** every policy type has happy, violation, and config-error tests; the
 demo suite passes; the adversarial suite reports exactly its expected
@@ -139,8 +148,8 @@ release blocker and gets committed as a regression test once fixed.
 - `agent-evals gate`: replay-mode gate over committed fixtures + baselines;
   Markdown summary for the CI job; machine-readable result artifact.
 - CI workflows finalized: no keys, no cost, no variance.
-- README written last, walkthrough style: a good agent passes; a shipped
-  "villain" trajectory (destructive call without confirmation) fails the
+- README written last, walkthrough style: a good agent passes; the M3
+  villain trajectory (destructive call without confirmation) fails the
   gate with the violating step named.
 
 **DoD:** from a clean clone, `agent-evals gate` (demo suites) exits 0 and
