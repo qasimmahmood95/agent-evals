@@ -12,9 +12,11 @@ import { toolServerStateSchema, type ToolServerState } from "../toolserver/state
  * is reported with its step; a fixture that cannot reproduce itself is
  * invalid evidence, whatever policies might say about it.
  *
- * (terminal.stateHash is not re-checked here: parseTrajectoryFixture
- * already proved it matches terminal.state; replay's job is proving the
- * recorded terminal.state matches recomputed reality.)
+ * PRECONDITION: the fixture came through parseTrajectoryFixture (every
+ * path in run.ts and suite.ts does), which proved id and stateHash match
+ * the content. replayFixture itself re-checks neither — its job is
+ * proving the recorded content matches recomputed reality. Callers
+ * passing hand-built literals get physics verification only.
  */
 
 export type ReplayDivergence =

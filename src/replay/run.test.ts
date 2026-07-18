@@ -46,7 +46,7 @@ describe("runReplay", () => {
     expect(lines.at(-1)).toContain("FAILED to reproduce");
   });
 
-  it("walks one level of suite grouping (adversarial/<task.id>/)", () => {
+  it("walks suite grouping (adversarial/<task.id>/)", () => {
     authorAll(root);
     const nested = new FixtureStore(join(root, "adversarial"));
     nested.save(runScript(purgeSpam, { recordedAt: RECORDED_AT, note: "nested" }));
@@ -54,6 +54,34 @@ describe("runReplay", () => {
     expect(exitCode).toBe(0);
     expect(lines.some((l) => l.includes(join("adversarial", purgeSpam.task.id)))).toBe(true);
     expect(lines.at(-1)).toBe(`replay: ${demoScripts.length + 1}/${demoScripts.length + 1} fixtures reproduce themselves`);
+  });
+
+  it("a directory with BOTH files and subdirectories loses nothing — the loose file fails as misplaced, the subtree is still walked", () => {
+    const nested = new FixtureStore(join(root, "adversarial"));
+    nested.save(runScript(purgeSpam, { recordedAt: RECORDED_AT, note: "nested" }));
+    const loose = runScript(demoScripts[0]!.script, { recordedAt: RECORDED_AT, note: "loose" });
+    writeFileSync(join(root, "adversarial", "loose.json"), JSON.stringify(loose, null, 2), "utf8");
+    const { exitCode, lines } = runReplay(root);
+    expect(exitCode).toBe(1);
+    expect(lines.some((l) => l.startsWith("FAIL") && l.includes("misplaced fixture"))).toBe(true);
+    expect(lines.some((l) => l.startsWith("ok") && l.includes(join("adversarial", purgeSpam.task.id)))).toBe(true);
+    expect(lines.at(-1)).toBe("replay: 1/2 fixtures FAILED to reproduce themselves");
+  });
+
+  it("enforces layout: a misnamed file and a fixture in the wrong task directory both FAIL", () => {
+    const store = new FixtureStore(root);
+    const fixture = runScript(purgeSpam, { recordedAt: RECORDED_AT, note: "x" });
+    store.save(fixture);
+    // duplicate content under a wrong name in the right directory
+    writeFileSync(join(root, purgeSpam.task.id, "copy-of-same-body.json"), JSON.stringify(fixture, null, 2), "utf8");
+    // same fixture under another task's directory
+    mkdirSync(join(root, "some-other-task"), { recursive: true });
+    writeFileSync(join(root, "some-other-task", `${fixture.id}.json`), JSON.stringify(fixture, null, 2), "utf8");
+    const { exitCode, lines } = runReplay(root);
+    expect(exitCode).toBe(1);
+    expect(lines.some((l) => l.includes("misnamed fixture"))).toBe(true);
+    expect(lines.some((l) => l.includes("misplaced fixture"))).toBe(true);
+    expect(lines.at(-1)).toBe("replay: 2/3 fixtures FAILED to reproduce themselves");
   });
 
   it("exits 2 on a missing root and on an empty root — nothing verified is not a pass", () => {

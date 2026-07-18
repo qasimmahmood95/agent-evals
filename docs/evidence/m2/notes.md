@@ -33,4 +33,4 @@ replay: 4/4 fixtures reproduce themselves
 
 Regeneration determinism: `npm run fixtures:author` run twice produces byte-identical files (sha256sum over all fixture files compared clean between runs).
 
-The committed `close-duplicate-tickets` fixture is the ADR-0001 example: same id (`1f58ff46…`), byte-equal content — enforced by `src/record/script-driver.test.ts`.
+The committed `close-duplicate-tickets` fixture is the ADR-0001 example: same id (`1f58ff46…`), content-equal with identical id — enforced by `src/record/script-driver.test.ts` (deep equality; on-disk bytes differ only in JSON line wrapping).
