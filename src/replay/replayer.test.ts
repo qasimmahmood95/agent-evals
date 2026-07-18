@@ -65,11 +65,11 @@ describe("replayFixture", () => {
     expect(report.divergence).toMatchObject({ kind: "result", seq: 3, tool: "list_tickets" });
   });
 
-  it("a STATELESS reorder replays clean — replay is physics, ordering is policy (M3)", () => {
+  it("a STATELESS reorder replays clean - replay is physics, ordering is policy (M3)", () => {
     // confirmation moved AFTER the delete it was supposed to precede:
     // every result still reproduces (request_confirmation reads no ticket
     // state), so effect replay accepts it. Catching it is the ordering/
-    // allowlist policy's job — this test documents that boundary.
+    // allowlist policy's job - this test documents that boundary.
     const fixture = structuredClone(authored());
     const steps = fixture.body.steps;
     [steps[2], steps[3]] = [steps[3] as (typeof steps)[number], steps[2] as (typeof steps)[number]];

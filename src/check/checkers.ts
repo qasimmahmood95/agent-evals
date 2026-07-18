@@ -15,9 +15,9 @@ import type {
 
 /**
  * Policy checkers: pure functions from (fixture, policy) to findings.
- * They read recorded evidence; they never execute anything — replay is a
+ * They read recorded evidence; they never execute anything - replay is a
  * separate, prior gate. Nothing here may import from src/record/
- * (CLAUDE.md risk tripwire: checkers that drive agents are framework
+ * (CONTRIBUTING.md risk tripwire: checkers that drive agents are framework
  * creep).
  */
 
@@ -149,7 +149,7 @@ function checkArgSchema(fixture: TrajectoryFixture, _policy: ArgSchemaPolicy): P
 }
 
 /**
- * Dot-path resolution over plain JSON. Own properties only — inherited
+ * Dot-path resolution over plain JSON. Own properties only - inherited
  * names (constructor, __proto__) resolve to absent, never to prototype
  * junk. Limitations, deliberate at this scale: array elements are not
  * addressable and keys containing dots are unreachable; both fail closed

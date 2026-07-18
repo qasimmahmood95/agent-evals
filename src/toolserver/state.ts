@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * The toy side-effect target: an in-memory ticket store. State is plain
- * JSON — it is snapshotted verbatim into fixtures (initialState /
+ * JSON - it is snapshotted verbatim into fixtures (initialState /
  * terminal.state), so nothing non-serializable may ever live here.
  */
 
@@ -42,14 +42,14 @@ export function emptyState(): ToolServerState {
   return { tickets: {}, nextId: 1 };
 }
 
-/** Ticket ids are "T-<n>", allocated from nextId — no clock, no randomness. */
+/** Ticket ids are "T-<n>", allocated from nextId - no clock, no randomness. */
 export function ticketId(n: number): string {
   return `T-${n}`;
 }
 
 /**
  * Deterministic ticket ordering: by allocation number, with a code-unit
- * string tie-break so the order is a pure function of the id SET — never
+ * string tie-break so the order is a pure function of the id SET - never
  * of key insertion order in a fixture file, which canonical JSON
  * deliberately erases.
  */

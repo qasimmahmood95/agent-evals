@@ -44,7 +44,7 @@ describe("canonicalJson", () => {
     expect(() => canonicalJson({ when: new Date(0) })).toThrow(/non-plain object at \$\.when/);
     expect(() => canonicalJson(new Map([["a", 1]]))).toThrow(/non-plain object at \$/);
     expect(() => canonicalJson(new Set([1]))).toThrow(/non-plain object/);
-    // null-prototype objects are plain data — allowed
+    // null-prototype objects are plain data - allowed
     const nullProto = Object.create(null) as Record<string, number>;
     nullProto.a = 1;
     expect(canonicalJson(nullProto)).toBe('{"a":1}');

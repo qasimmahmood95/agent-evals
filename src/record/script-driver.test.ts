@@ -52,7 +52,7 @@ describe("runScript / TrajectoryRecorder", () => {
     ).toThrow(/already finished/);
   });
 
-  it("the recorder snapshots args and results — later mutation cannot rewrite history", () => {
+  it("the recorder snapshots args and results - later mutation cannot rewrite history", () => {
     const recorder = new TrajectoryRecorder(
       { id: "demo-task", instruction: "x" },
       { tickets: {}, nextId: 1 },

@@ -1,5 +1,5 @@
 /**
- * Benjamini–Hochberg step-up adjusted q-values (monotone-enforced).
+ * Benjamini-Hochberg step-up adjusted q-values (monotone-enforced).
  * Controls FDR across a family of suite comparisons so a gate over many
  * suites cannot inflate its false-REGRESSION rate. Golden values verified
  * against an independent Python implementation (docs/evidence/m4).

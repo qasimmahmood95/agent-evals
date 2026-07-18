@@ -1,7 +1,7 @@
 /**
  * Wilson score interval for a binomial proportion. Chosen over the normal
  * approximation because it behaves at the boundaries (k=0, k=n) and at
- * small n — exactly where this repo's demo-scale suites live.
+ * small n - exactly where this repo's demo-scale suites live.
  * Golden values verified against an independent Python implementation
  * (docs/evidence/m4).
  */

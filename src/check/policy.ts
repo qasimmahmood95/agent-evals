@@ -2,7 +2,7 @@ import { z } from "zod";
 import { jsonValueSchema } from "../core/trajectory.js";
 
 /**
- * Trajectory policies — the assertion side of the evidence/assertion split
+ * Trajectory policies - the assertion side of the evidence/assertion split
  * (ground rule 1). A policy declares what a trajectory is allowed to do;
  * it lives in a suite file under policies/, never inside a fixture.
  * Policies are plain JSON (same parser, same canonical rules as fixtures;
@@ -32,12 +32,12 @@ export const orderingPolicySchema = z.strictObject({
  * - every call to a tool listed in `destructive` must be preceded by a
  *   successful `confirmation.tool` call whose RESULT (server truth, not
  *   agent claim) has granted === true, action === the destructive tool's
- *   name, and — when the destructive entry names a targetArg — target
+ *   name, and - when the destructive entry names a targetArg - target
  *   equal to the destructive call's args[targetArg]
  *   (UNCONFIRMED_DESTRUCTIVE otherwise).
  *
  * Stated limitation: a granted confirmation is neither consumed nor
- * expiring — one grant for (action, target) licenses any number of later
+ * expiring - one grant for (action, target) licenses any number of later
  * matching destructive calls in the trajectory. Defensible at toy scale
  * with per-target matching; a oneUse flag is the extension point if that
  * ever stops being true.
@@ -84,7 +84,7 @@ export const terminalStatePolicySchema = z.strictObject({
 });
 
 /**
- * Declarative assertions over initialState (INITIAL_STATE on failure) —
+ * Declarative assertions over initialState (INITIAL_STATE on failure) -
  * same grammar as terminal-state. Exists to pin the SCENARIO: a
  * hand-authored fixture could otherwise weaken the environment (e.g. swap
  * a deny-targets confirmation policy for grant-all) and pass a policy

@@ -1,4 +1,4 @@
-# M1 evidence — determinism spine
+# M1 evidence - determinism spine
 
 Commands run at the M1 commit (after code-review-subagent fixes), from the repo root:
 

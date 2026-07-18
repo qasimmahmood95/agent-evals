@@ -7,11 +7,11 @@ import { replayFixture, type ReplayDivergence } from "./replayer.js";
 /**
  * Replay every committed fixture under a store root. Exit codes are
  * contract (llm-evals-ts discipline): 0 all fixtures reproduce themselves,
- * 1 any fixture fails (unloadable counts as failed — skipped is never a
+ * 1 any fixture fails (unloadable counts as failed - skipped is never a
  * pass), 2 configuration error (missing root, or a root with no fixtures:
  * an empty replay run must not masquerade as a green one).
  *
- * The walk visits EVERY .json file at any depth — files and
+ * The walk visits EVERY .json file at any depth - files and
  * subdirectories in the same directory are both processed, so nothing can
  * be dropped silently. Layout is enforced as it goes (ADR-0001 makes it
  * load-bearing: n = file count per task directory):
@@ -92,7 +92,7 @@ export function runReplay(rootDir: string): ReplayRunResult {
   walk(rootDir);
 
   if (total === 0) {
-    return { exitCode: 2, lines: [`replay: no fixtures found under ${rootDir} — nothing verified`] };
+    return { exitCode: 2, lines: [`replay: no fixtures found under ${rootDir} - nothing verified`] };
   }
   lines.push(
     failed === 0

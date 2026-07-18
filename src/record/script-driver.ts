@@ -6,8 +6,8 @@ import { TrajectoryRecorder } from "./recorder.js";
  * The disposable agent: a declarative script of tool calls and notes,
  * executed verbatim against the tool server through the recorder. This is
  * how demo fixtures are authored with zero keys (`provenance: "scripted"`).
- * It plans nothing, retries nothing, remembers nothing — it exists to
- * generate trajectories and may be deleted without loss (CLAUDE.md).
+ * It plans nothing, retries nothing, remembers nothing - it exists to
+ * generate trajectories and may be deleted without loss (CONTRIBUTING.md).
  */
 
 export type ScriptAction =
@@ -15,7 +15,7 @@ export type ScriptAction =
   | { do: "note"; text: string };
 
 export interface TrajectoryScript {
-  /** Versioned script id, e.g. "close-duplicates@1" — becomes agent.id. */
+  /** Versioned script id, e.g. "close-duplicates@1" - becomes agent.id. */
   id: string;
   task: { id: string; instruction: string };
   initialState: JsonValue;

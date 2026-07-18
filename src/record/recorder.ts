@@ -11,8 +11,8 @@ import { toolServerStateSchema, type ToolServerState } from "../toolserver/state
 
 /**
  * The recorder seam: wraps the tool server and accumulates ADR-0001 steps.
- * Whatever drives it — the scripted driver (M2), a live model adapter
- * (never in CI) — the emitted fixture is identical in kind.
+ * Whatever drives it - the scripted driver (M2), a live model adapter
+ * (never in CI) - the emitted fixture is identical in kind.
  *
  * Deliberately clock-free: `recordedAt` is the caller's problem, passed
  * into finish(). Scripted authoring passes a fixed value so regenerated

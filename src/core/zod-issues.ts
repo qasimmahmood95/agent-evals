@@ -8,7 +8,7 @@ import type { z } from "zod";
  *
  * Residual coupling, accepted: the issue-code string "unrecognized_keys"
  * is zod API. A zod major that renames it would change recorded
- * INVALID_ARGS messages and invalidate affected fixtures — treat a zod
+ * INVALID_ARGS messages and invalidate affected fixtures - treat a zod
  * major bump as a fixture-impacting change and re-run replay before
  * trusting it.
  */

@@ -1,14 +1,14 @@
 import { mulberry32 } from "./random.js";
 
 /**
- * Seeded percentile bootstrap on the mean of paired per-task differences —
+ * Seeded percentile bootstrap on the mean of paired per-task differences -
  * the llm-evals-ts approach re-derived: pairing per task is the variance
  * reduction that makes small suites able to say anything at all; the seed
  * is part of the reported result.
  *
  * Also reports a two-sided bootstrap p-value for the null mean(diff) = 0
  * (proportion of resampled means on the other side of zero, doubled,
- * floored at 1/B) — the input Benjamini–Hochberg needs across a family.
+ * floored at 1/B) - the input Benjamini-Hochberg needs across a family.
  *
  * Returns undefined for empty input: no data is not a zero effect.
  */
