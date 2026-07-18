@@ -18,15 +18,16 @@ What the harness does:
    state) as committed, content-addressed fixtures.
 2. **Replays** them in CI with zero API keys and zero cost — effect-replay
    re-executes every recorded tool call against a fresh in-memory tool server
-   and requires bit-identical results and terminal state, so a fixture that
-   cannot reproduce itself is rejected, not trusted.
+   and requires results and terminal state equal under canonical JSON, so a
+   fixture that cannot reproduce itself is rejected, not trusted.
 3. **Asserts** trajectory properties: required tool-call ordering,
    side-effect allowlists (a destructive tool never fires without a prior
    confirmation step), per-tool argument schema validity, and terminal-state
    assertions.
 4. **Judges statistically** where live runs are sampled: verdicts follow
    llm-evals-ts rules — `REGRESSION` requires a confidence interval that
-   excludes zero. No vibes.
+   excludes zero *and* survives multiplicity adjustment across the suite
+   family. No vibes.
 
 ## Hard limits (scope discipline)
 
@@ -86,7 +87,7 @@ src/toolserver/  toy in-memory ticket store: tool definitions + argument schemas
 src/replay/      effect replayer + determinism/integrity checks
 src/record/      recorder seam + scripted driver (the disposable agent)
 src/check/       trajectory policies: ordering · allowlist · arg-schema · terminal-state
-src/stats/       wilson · seeded bootstrap (llm-evals-ts discipline, re-derived)
+src/stats/       wilson · seeded bootstrap · benjamini-hochberg (llm-evals-ts discipline, re-derived)
 src/report/      CLI tables · gate summary
 trajectories/    committed fixtures, content-addressed per task
 policies/        policy files per suite (the assertions)
@@ -98,21 +99,18 @@ docs/evidence/   per-milestone evidence
 
 - **Code-review subagent** before each milestone PR: reviews the diff for
   correctness and for violations of the ground rules above.
-- **Verification subagent** (from the first milestone that commits
-  fixtures): from a clean clone with no network access, replays every
-  committed trajectory fixture and confirms bit-identical results — the
-  determinism claim is proven, not asserted.
+- **Verification subagent** (every milestone that commits or touches
+  fixtures — M2, M3, M4): from a clean clone with no network access, replays
+  every committed trajectory fixture and confirms each reproduces itself
+  (results and terminal state equal under canonical JSON) — the determinism
+  claim is proven, not asserted.
 - **Adversarial subagent** (once policies exist): attempts to author a
   trajectory violating each side-effect allowlist and confirms the harness
   rejects every one. Surviving violations are release blockers.
 
 ## Commands
 
-```bash
-npm test              # offline-safe unit tests
-npm run typecheck     # tsc --noEmit
-```
-
-Further commands (`replay`, `check`, `gate`) land with their milestones and
-are added here when they exist — this file never advertises a command that
-doesn't run.
+None yet — the repo is at M0 (design review; docs only). `npm test` and
+`npm run typecheck` land with the M1 scaffolding; `replay`, `check`, and
+`gate` land with their milestones. Commands are added here when they exist —
+this file never advertises a command that doesn't run.
