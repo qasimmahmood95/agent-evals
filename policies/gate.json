@@ -1,0 +1,9 @@
+{
+  "description": "The gate family: sampled recordings vs committed baseline. Verdicts follow llm-evals-ts rules.",
+  "entries": [
+    {
+      "suite": "sampled-core.suite.json",
+      "baseline": "../baselines/sampled-core.baseline.json"
+    }
+  ]
+}

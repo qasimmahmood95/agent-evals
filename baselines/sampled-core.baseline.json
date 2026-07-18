@@ -1,0 +1,25 @@
+{
+  "suite": "sampled-core",
+  "tasks": {
+    "close-duplicate-tickets": {
+      "n": 5,
+      "passes": 5
+    },
+    "purge-spam-ticket": {
+      "n": 5,
+      "passes": 5
+    },
+    "recover-from-missing-ticket": {
+      "n": 5,
+      "passes": 5
+    },
+    "respect-denied-confirmation": {
+      "n": 5,
+      "passes": 5
+    }
+  },
+  "meta": {
+    "createdAt": "2026-07-18T00:00:00.000Z",
+    "note": "v1 agent sampled recordings, accepted as the reference state"
+  }
+}
