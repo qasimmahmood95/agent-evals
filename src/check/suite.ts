@@ -6,8 +6,9 @@ import { FixtureStore } from "../core/fixture-store.js";
 import type { TrajectoryFixture } from "../core/trajectory.js";
 import { issuePaths } from "../core/zod-issues.js";
 import { replayFixture } from "../replay/replayer.js";
+import { toolNames } from "../toolserver/server.js";
 import { checkFixture } from "./checkers.js";
-import { policySchema, type PolicyFinding } from "./policy.js";
+import { policySchema, violationCodes, type Policy } from "./policy.js";
 
 /**
  * A suite binds fixtures to policies and — for negative suites — to
@@ -35,7 +36,14 @@ export const suiteSchema = z.strictObject({
     )
     .min(1),
   expectedViolations: z
-    .array(z.strictObject({ task: z.string().min(1), code: z.string().min(1) }))
+    .array(
+      z.strictObject({
+        task: z.string().min(1),
+        code: z.enum(violationCodes),
+        /** pin the violation to a step — "caught for the right reason" */
+        seq: z.number().int().nonnegative().optional(),
+      }),
+    )
     .optional(),
 });
 
@@ -50,6 +58,27 @@ function configError(lines: string[]): CheckRunResult {
   return { exitCode: 2, lines };
 }
 
+/**
+ * Every tool name a policy references must exist on the server: a
+ * misspelled matcher would otherwise match zero steps and pass silently —
+ * the "skipped is never a pass" failure mode, one typo away.
+ */
+function unknownPolicyTools(policies: Policy[]): string[] {
+  const known = new Set<string>(toolNames);
+  const referenced: string[] = [];
+  for (const policy of policies) {
+    if (policy.kind === "ordering") {
+      referenced.push(...policy.before.map((m) => m.tool), policy.after.tool);
+    } else if (policy.kind === "allowlist") {
+      referenced.push(...policy.allowedTools, ...policy.destructive.map((d) => d.tool));
+      if (policy.confirmation) referenced.push(policy.confirmation.tool);
+    }
+  }
+  return [...new Set(referenced.filter((t) => !known.has(t)))].sort();
+}
+
+/** Refs resolve relative to the suite file, including ../ — acceptable for
+ * reviewed committed config driven by a local CLI. */
 function resolveFixtureFiles(suiteDir: string, ref: string): string[] | undefined {
   const path = resolve(suiteDir, ref);
   if (!existsSync(path)) return undefined;
@@ -63,33 +92,74 @@ function resolveFixtureFiles(suiteDir: string, ref: string): string[] | undefine
   return [path];
 }
 
-export function runCheck(suitePath: string): CheckRunResult {
-  if (!existsSync(suitePath)) return configError([`check: suite not found: ${suitePath}`]);
+export interface TaskTally {
+  files: number;
+  passes: number;
+}
+
+export type SuiteEvaluation =
+  | { kind: "config-error"; lines: string[] }
+  | {
+      kind: "evaluated";
+      suite: Suite;
+      lines: string[];
+      integrityFailures: number;
+      /** per-task sample tallies: a file passes when it has zero findings */
+      perTask: Map<string, TaskTally>;
+      violations: { task: string; code: string; seq?: number }[];
+    };
+
+/**
+ * Shared evaluation core: load, integrity-check, replay, and policy-check
+ * every fixture a suite binds. runCheck layers expectation matching on
+ * top; the gate (M4) layers baselines and statistics on top.
+ */
+export function evaluateSuite(suitePath: string): SuiteEvaluation {
+  if (!existsSync(suitePath)) return { kind: "config-error", lines: [`check: suite not found: ${suitePath}`] };
   let rawSuite: unknown;
   try {
     rawSuite = JSON.parse(readFileSync(suitePath, "utf8"));
   } catch (e) {
-    return configError([`check: unreadable suite ${suitePath}: ${e instanceof Error ? e.message : String(e)}`]);
+    return {
+      kind: "config-error",
+      lines: [`check: unreadable suite ${suitePath}: ${e instanceof Error ? e.message : String(e)}`],
+    };
   }
   const parsed = suiteSchema.safeParse(rawSuite);
   if (!parsed.success) {
-    return configError([
-      `check: invalid suite ${suitePath} at: ${issuePaths(parsed.error.issues).join(", ")}`,
-    ]);
+    return {
+      kind: "config-error",
+      lines: [`check: invalid suite ${suitePath} at: ${issuePaths(parsed.error.issues).join(", ")}`],
+    };
   }
   const suite = parsed.data;
+  for (const suiteCase of suite.cases) {
+    const unknown = unknownPolicyTools(suiteCase.policies);
+    if (unknown.length > 0) {
+      return {
+        kind: "config-error",
+        lines: [`check: case ${suiteCase.task}: policies reference unknown tools: ${unknown.join(", ")}`],
+      };
+    }
+  }
   const suiteDir = dirname(resolve(suitePath));
   const store = new FixtureStore("."); // used only for loadFile
   const lines: string[] = [`suite ${suite.name}`];
 
   let integrityFailures = 0;
-  const actual: { task: string; code: string }[] = [];
+  const violations: { task: string; code: string; seq?: number }[] = [];
+  const perTask = new Map<string, TaskTally>();
 
   for (const suiteCase of suite.cases) {
+    const tally = perTask.get(suiteCase.task) ?? { files: 0, passes: 0 };
+    perTask.set(suiteCase.task, tally);
     for (const ref of suiteCase.fixtures) {
       const files = resolveFixtureFiles(suiteDir, ref);
       if (!files) {
-        return configError([`check: case ${suiteCase.task}: no fixtures at ${ref} — nothing to assert is not a pass`]);
+        return {
+          kind: "config-error",
+          lines: [`check: case ${suiteCase.task}: no fixtures at ${ref} — nothing to assert is not a pass`],
+        };
       }
       for (const file of files) {
         const rel = relative(process.cwd(), file);
@@ -102,9 +172,10 @@ export function runCheck(suitePath: string): CheckRunResult {
           continue;
         }
         if (fixture.body.task.id !== suiteCase.task) {
-          return configError([
-            `check: case ${suiteCase.task}: fixture ${rel} records task ${fixture.body.task.id}`,
-          ]);
+          return {
+            kind: "config-error",
+            lines: [`check: case ${suiteCase.task}: fixture ${rel} records task ${fixture.body.task.id}`],
+          };
         }
         const replay = replayFixture(fixture);
         if (!replay.ok) {
@@ -112,13 +183,20 @@ export function runCheck(suitePath: string): CheckRunResult {
           lines.push(`FAIL  ${rel}\n      fixture does not replay — policies not consulted (${replay.divergence?.kind})`);
           continue;
         }
+        tally.files += 1;
         const findings = checkFixture(fixture, suiteCase.policies);
         const tag = `${fixture.meta.provenance}, ${suiteCase.policies.length} policies`;
         if (findings.length === 0) {
+          tally.passes += 1;
           lines.push(`ok    ${rel}  (${tag})`);
         } else {
           for (const finding of findings) {
-            actual.push({ task: suiteCase.task, code: finding.code });
+            const violation: { task: string; code: string; seq?: number } = {
+              task: suiteCase.task,
+              code: finding.code,
+            };
+            if (finding.seq !== undefined) violation.seq = finding.seq;
+            violations.push(violation);
             lines.push(`VIOLATION [${finding.code}]  ${rel}  (${tag})\n      ${finding.message}`);
           }
         }
@@ -126,17 +204,40 @@ export function runCheck(suitePath: string): CheckRunResult {
     }
   }
 
+  return { kind: "evaluated", suite, lines, integrityFailures, perTask, violations };
+}
+
+export function runCheck(suitePath: string): CheckRunResult {
+  const evaluation = evaluateSuite(suitePath);
+  if (evaluation.kind === "config-error") return configError(evaluation.lines);
+  const { suite, lines, integrityFailures, violations: actual } = evaluation;
+
   const expected = suite.expectedViolations ?? [];
-  const key = (v: { task: string; code: string }) => `${v.task}:${v.code}`;
-  const actualSorted = actual.map(key).sort();
-  const expectedSorted = expected.map(key).sort();
-  const matches = JSON.stringify(actualSorted) === JSON.stringify(expectedSorted);
+
+  // seq-aware matching: an expectation with a seq consumes only a
+  // violation at that exact step ("caught for the right reason"); one
+  // without a seq consumes any violation of that task+code. Seq-pinned
+  // expectations match first so a loose one cannot steal their target.
+  const remaining = [...actual];
+  const missing: string[] = [];
+  const describe = (v: { task: string; code: string; seq?: number }) =>
+    v.seq === undefined ? `${v.task}:${v.code}` : `${v.task}:${v.code}@step${v.seq}`;
+  const pinnedFirst = [...expected].sort((a, b) => Number(b.seq !== undefined) - Number(a.seq !== undefined));
+  for (const exp of pinnedFirst) {
+    const i = remaining.findIndex(
+      (v) => v.task === exp.task && v.code === exp.code && (exp.seq === undefined || v.seq === exp.seq),
+    );
+    if (i === -1) missing.push(describe(exp));
+    else remaining.splice(i, 1);
+  }
+  const unexpected = remaining.map(describe).sort();
+  missing.sort();
 
   if (integrityFailures > 0) {
     lines.push(`suite ${suite.name}: FAIL — ${integrityFailures} fixture(s) failed integrity/replay`);
     return { exitCode: 1, lines };
   }
-  if (matches) {
+  if (missing.length === 0 && unexpected.length === 0) {
     lines.push(
       expected.length === 0
         ? `suite ${suite.name}: PASS — no violations`
@@ -144,22 +245,8 @@ export function runCheck(suitePath: string): CheckRunResult {
     );
     return { exitCode: 0, lines };
   }
-  const missing = diffMultiset(expectedSorted, actualSorted);
-  const unexpected = diffMultiset(actualSorted, expectedSorted);
   if (missing.length > 0) lines.push(`suite ${suite.name}: expected violations NOT found: ${missing.join(", ")}`);
   if (unexpected.length > 0) lines.push(`suite ${suite.name}: unexpected violations: ${unexpected.join(", ")}`);
   lines.push(`suite ${suite.name}: FAIL`);
   return { exitCode: 1, lines };
-}
-
-function diffMultiset(a: string[], b: string[]): string[] {
-  const counts = new Map<string, number>();
-  for (const x of b) counts.set(x, (counts.get(x) ?? 0) + 1);
-  const out: string[] = [];
-  for (const x of a) {
-    const n = counts.get(x) ?? 0;
-    if (n > 0) counts.set(x, n - 1);
-    else out.push(x);
-  }
-  return out;
 }

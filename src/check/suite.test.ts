@@ -119,6 +119,49 @@ describe("runCheck edge cases", () => {
     expect(lines.some((l) => l.includes("does not replay — policies not consulted"))).toBe(true);
   });
 
+  it("exit 1 when a violation happens at the WRONG step — seq-pinned expectations enforce caught-for-the-right-reason", () => {
+    saveFixtures();
+    const path = writeSuite("wrong-step", {
+      name: "wrong-step",
+      cases: [
+        {
+          task: purgeSpamUnconfirmed.task.id,
+          fixtures: [`trajectories/${purgeSpamUnconfirmed.task.id}`],
+          policies: PURGE_POLICIES,
+        },
+      ],
+      // the real violation is at seq 1; expecting it at seq 0 must fail
+      expectedViolations: [{ task: purgeSpamUnconfirmed.task.id, code: "UNCONFIRMED_DESTRUCTIVE", seq: 0 }],
+    });
+    const { exitCode, lines } = runCheck(path);
+    expect(exitCode).toBe(1);
+    expect(lines.some((l) => l.includes("expected violations NOT found") && l.includes("@step0"))).toBe(true);
+    expect(lines.some((l) => l.includes("unexpected violations") && l.includes("@step1"))).toBe(true);
+  });
+
+  it("exit 2 when a policy references a tool the server does not define — a typo must not pass silently", () => {
+    saveFixtures();
+    const path = writeSuite("typo", {
+      name: "typo",
+      cases: [
+        {
+          task: purgeSpam.task.id,
+          fixtures: [`trajectories/${purgeSpam.task.id}`],
+          policies: [
+            {
+              kind: "ordering",
+              before: [{ tool: "get_ticket" }],
+              after: { tool: "update_tickets" },
+            },
+          ],
+        },
+      ],
+    });
+    const { exitCode, lines } = runCheck(path);
+    expect(exitCode).toBe(2);
+    expect(lines.some((l) => l.includes("unknown tools: update_tickets"))).toBe(true);
+  });
+
   it("exit 2 on config errors: missing suite, malformed suite, missing fixtures, empty dir, task mismatch", () => {
     expect(runCheck(join(root, "nope.suite.json")).exitCode).toBe(2);
 

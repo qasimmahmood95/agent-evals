@@ -5,6 +5,7 @@ import { argSchemaFor, toolNames, type ToolName } from "../toolserver/server.js"
 import type {
   AllowlistPolicy,
   ArgSchemaPolicy,
+  InitialStatePolicy,
   OrderingPolicy,
   Policy,
   PolicyFinding,
@@ -30,7 +31,9 @@ export function checkFixture(fixture: TrajectoryFixture, policies: Policy[]): Po
       case "arg-schema":
         return checkArgSchema(fixture, policy);
       case "terminal-state":
-        return checkTerminalState(fixture, policy);
+        return checkStateAssertions(fixture.body.terminal.state, policy, "terminal-state", "TERMINAL_STATE", "terminal.state");
+      case "initial-state":
+        return checkStateAssertions(fixture.body.initialState, policy, "initial-state", "INITIAL_STATE", "initialState");
     }
   });
 }
@@ -55,6 +58,9 @@ function checkOrdering(fixture: TrajectoryFixture, policy: OrderingPolicy): Poli
   for (const [i, step] of calls.entries()) {
     if (step.tool !== policy.after.tool) continue;
     const satisfied = calls.slice(0, i).some((earlier) => {
+      // a FAILED before-call is no evidence: a rejected read cannot
+      // satisfy "read before edit"
+      if (!earlier.result.ok) return false;
       if (!policy.before.some((m) => m.tool === earlier.tool)) return false;
       if (!policy.sameArg) return true;
       return jsonEq(argOf(earlier, policy.sameArg.beforeArg), argOf(step, policy.sameArg.afterArg));
@@ -142,51 +148,64 @@ function checkArgSchema(fixture: TrajectoryFixture, _policy: ArgSchemaPolicy): P
   return findings;
 }
 
+/**
+ * Dot-path resolution over plain JSON. Own properties only — inherited
+ * names (constructor, __proto__) resolve to absent, never to prototype
+ * junk. Limitations, deliberate at this scale: array elements are not
+ * addressable and keys containing dots are unreachable; both fail closed
+ * (absent), never open.
+ */
 function resolvePath(state: JsonValue, path: string): JsonValue | undefined {
   let current: JsonValue | undefined = state;
   for (const segment of path.split(".")) {
     if (current === undefined || current === null || typeof current !== "object" || Array.isArray(current)) {
       return undefined;
     }
+    if (!Object.hasOwn(current, segment)) return undefined;
     current = current[segment];
   }
   return current;
 }
 
-function checkTerminalState(fixture: TrajectoryFixture, policy: TerminalStatePolicy): PolicyFinding[] {
-  const state = fixture.body.terminal.state;
+function checkStateAssertions(
+  state: JsonValue,
+  policy: TerminalStatePolicy | InitialStatePolicy,
+  policyKind: "terminal-state" | "initial-state",
+  code: "TERMINAL_STATE" | "INITIAL_STATE",
+  label: string,
+): PolicyFinding[] {
   const findings: PolicyFinding[] = [];
   for (const assertion of policy.assertions) {
-    const failure = evaluateAssertion(state, assertion);
+    const failure = evaluateAssertion(state, assertion, label);
     if (failure !== undefined) {
-      findings.push({ code: "TERMINAL_STATE", policyKind: "terminal-state", message: failure });
+      findings.push({ code, policyKind, message: failure });
     }
   }
   return findings;
 }
 
-function evaluateAssertion(state: JsonValue, assertion: TerminalAssertion): string | undefined {
+function evaluateAssertion(state: JsonValue, assertion: TerminalAssertion, label: string): string | undefined {
   const actual = resolvePath(state, assertion.path);
   if ("equals" in assertion) {
-    if (actual === undefined) return `terminal.state.${assertion.path} is absent, expected ${canonicalJson(assertion.equals)}`;
+    if (actual === undefined) return `${label}.${assertion.path} is absent, expected ${canonicalJson(assertion.equals)}`;
     if (canonicalJson(actual) !== canonicalJson(assertion.equals)) {
-      return `terminal.state.${assertion.path} is ${canonicalJson(actual)}, expected ${canonicalJson(assertion.equals)}`;
+      return `${label}.${assertion.path} is ${canonicalJson(actual)}, expected ${canonicalJson(assertion.equals)}`;
     }
     return undefined;
   }
   if ("exists" in assertion) {
     const exists = actual !== undefined;
     if (exists !== assertion.exists) {
-      return `terminal.state.${assertion.path} ${exists ? "exists but must not" : "is absent but must exist"}`;
+      return `${label}.${assertion.path} ${exists ? "exists but must not" : "is absent but must exist"}`;
     }
     return undefined;
   }
   if (actual === null || typeof actual !== "object") {
-    return `terminal.state.${assertion.path} is not countable (expected object or array)`;
+    return `${label}.${assertion.path} is not countable (expected object or array)`;
   }
   const count = Array.isArray(actual) ? actual.length : Object.keys(actual).length;
   if (count !== assertion.count) {
-    return `terminal.state.${assertion.path} has count ${count}, expected ${assertion.count}`;
+    return `${label}.${assertion.path} has count ${count}, expected ${assertion.count}`;
   }
   return undefined;
 }
