@@ -110,7 +110,11 @@ docs/evidence/   per-milestone evidence
 
 ## Commands
 
-None yet — the repo is at M0 (design review; docs only). `npm test` and
-`npm run typecheck` land with the M1 scaffolding; `replay`, `check`, and
-`gate` land with their milestones. Commands are added here when they exist —
-this file never advertises a command that doesn't run.
+```bash
+npm test              # offline-safe unit + property tests
+npm run typecheck     # tsc --noEmit
+```
+
+`replay`, `check`, and `gate` land with their milestones (M2–M4) and are
+added here when they exist — this file never advertises a command that
+doesn't run.
