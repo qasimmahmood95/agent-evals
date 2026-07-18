@@ -20,30 +20,43 @@ CLAUDE.md, this plan, and two Proposed ADRs:
 **DoD:** maintainer has reviewed and accepted (or amended) both ADRs.
 Implementation does not start until the fixture schema is signed off — the
 format is the product; churning it later invalidates committed fixtures.
+**Gate:** maintainer review is the gate at M0 (docs only, no diff to
+code-review); the subagent gates start at M1.
 
 ## M1 — Determinism spine: format, store, toy tool server
 
 - `src/core/`: canonical JSON (sorted keys, stable serialization — the
   llm-evals-ts approach, re-derived with its own tests); zod schema for the
   trajectory fixture format per ADR-0001, so a malformed fixture fails at
-  load with a field-level message; content-addressed fixture store with
-  occurrence sequencing (`<hash>.json`, `<hash>.1.json`, …) — k sampled runs
-  of one task are k genuinely distinct recordings, inspectable on disk;
-  state hashing.
+  load with a field-level message (shape checks in zod; `id` and `stateHash`
+  *correctness* verified by the loader, which recomputes both); content-
+  addressed fixture store with occurrence suffixes for repeat recordings
+  whose bodies are identical (`<id>.json`, `<id>.1.json`, …; existing files
+  are never overwritten) — k sampled runs of one task are k files on disk,
+  inspectable, whether or not the runs happened to be identical; state
+  hashing.
 - `src/toolserver/`: the toy side-effect target — an in-memory **ticket
   store** (`create_ticket`, `get_ticket`, `list_tickets`, `update_ticket`,
   `close_ticket`, `request_confirmation`, `delete_ticket`,
-  `bulk_close`). Every tool owns a zod argument schema. Semantics are a pure
-  function of (state, call): no clock, no randomness, deterministic IDs.
-  Deliberate design point: the server itself does **not** enforce the
-  confirmation protocol — destructive calls succeed unconditionally, so that
-  catching them is the harness's job, not the toy's.
+  `bulk_close`). Every tool owns a zod argument schema, validated by the
+  server at execution time: malformed arguments yield a deterministic
+  `ok: false` validation-error result, an ordinary recorded step. Semantics
+  are a pure function of (state, call): no clock, no randomness,
+  deterministic IDs. `request_confirmation`'s grant/deny outcome is
+  state-encoded — `initialState` carries a confirmation policy — so denial
+  trajectories (agent asks, is refused, correctly aborts) are recordable and
+  replayable. Deliberate design point: the server itself does **not**
+  enforce the confirmation protocol — destructive calls succeed
+  unconditionally, so that catching them is the harness's job, not the
+  toy's.
 - Scaffolding: strict-ESM tsconfig, vitest, CI workflow (typecheck + test,
   no secrets).
 
 **DoD:** `npm test` green offline; property test that any interleaving of
 tool calls replayed twice from the same state yields identical states;
-fixture schema round-trips the ADR-0001 example verbatim.
+fixture schema round-trips the ADR-0001 example with real computed hashes
+backfilled for the ADR's truncated placeholders (the backfill commit updates
+the ADR in the same PR).
 **Gate:** code-review subagent on the PR diff.
 
 ## M2 — Record and replay
@@ -55,8 +68,9 @@ fixture schema round-trips the ADR-0001 example verbatim.
   `ModelAdapter`-style interface for real agents (`provenance:
   "live-record"`), never exercised in CI.
 - `src/replay/`: the effect replayer — load fixture, hydrate a fresh server
-  from `initialState`, re-execute every step, require bit-identical results
-  and terminal `stateHash`. Any divergence is a hard error naming the first
+  from `initialState`, re-execute every step, require recomputed results
+  equal to recorded results under canonical JSON and the terminal
+  `stateHash` to match. Any divergence is a hard error naming the first
   divergent step. Replay misses are never silent.
 - CLI: `agent-evals replay [dir]` replays all committed fixtures; exit 0
   only if every fixture reproduces itself.
@@ -79,8 +93,13 @@ network, replay all fixtures, confirm determinism from scratch.
     arguments cover the destructive call's target and whose result granted;
     everything not allowlisted for the task is a violation.
   - **Argument schema validity** — every recorded call re-validated against
-    its tool's zod schema (catches trajectories recorded before a schema
-    tightened).
+    its tool's zod schema at the policy layer. The server already rejects
+    malformed arguments deterministically (M1), so such a step replays fine
+    — this check exists because a well-behaved agent doesn't *send*
+    malformed arguments; a recorded validation error is evidence of a
+    sloppy agent even when the trajectory recovers. (A schema *tightened
+    after recording* is a different event: it changes server behaviour,
+    breaks effect replay first, and forces a re-record — see ADR-0001.)
   - **Terminal state** — declarative assertions over the terminal snapshot
     (counts, existence, field values).
 - `policies/` file format (zod-validated, like llm-evals-ts suite loading):
@@ -91,25 +110,32 @@ network, replay all fixtures, confirm determinism from scratch.
   1 violations, 2 configuration error.
 - Negative fixtures: hand-authored violating trajectories (which must still
   pass effect replay — violations are policy-level, not physics-level)
-  under `trajectories/adversarial/`.
+  under `trajectories/adversarial/<task.id>/`, mirroring the standard
+  layout one level down. Suites select fixtures explicitly by path — `check`
+  and `gate` never infer scope by walking directories.
 
 **DoD:** every policy type has happy, violation, and config-error tests; the
 demo suite passes; the adversarial suite reports exactly its expected
 violations.
-**Gates:** code-review subagent; **adversarial subagent** — independently
-attempts one violating trajectory per allowlist rule and confirms the
-harness rejects each; any accepted violation is a release blocker and gets
-committed as a regression test once fixed.
+**Gates:** code-review subagent; **verification subagent** (new fixtures
+were committed — hand-authored ones get no replay exemption); **adversarial
+subagent** — independently attempts one violating trajectory per allowlist
+rule and confirms the harness rejects each; any accepted violation is a
+release blocker and gets committed as a regression test once fixed.
 
 ## M4 — Statistical layer and CI gate
 
-- Where live runs are sampled (k recordings per task, occurrence-sequenced),
-  per-task pass rates over policy checks are compared against a committed
-  baseline with the llm-evals-ts verdict rules: paired-per-task seeded
-  bootstrap; `REGRESSION` only when the 95% CI on the difference excludes
-  zero; `INCONCLUSIVE` when the CI contains zero but is too wide — small
-  samples say so out loud. Stats functions re-derived with golden values
-  and property tests (`src/stats/`), not copy-pasted.
+- Where live runs are sampled (k recordings per task — k fixture files,
+  occurrence-suffixed when runs are identical), per-task pass rates over
+  policy checks are compared against a committed baseline with the full
+  llm-evals-ts verdict rules: paired-per-task seeded bootstrap;
+  `REGRESSION` only when the 95% CI on the difference excludes zero *and*
+  survives Benjamini–Hochberg adjustment across the suite family; `PASS`
+  additionally requires the CI narrow enough to certify precision
+  (half-width ≤ 0.1 by default); `INCONCLUSIVE` when the CI contains zero
+  but is too wide — small samples say so out loud. Stats functions (wilson,
+  seeded bootstrap, benjamini-hochberg) re-derived with golden values and
+  property tests (`src/stats/`), not copy-pasted.
 - `agent-evals gate`: replay-mode gate over committed fixtures + baselines;
   Markdown summary for the CI job; machine-readable result artifact.
 - CI workflows finalized: no keys, no cost, no variance.
@@ -117,8 +143,10 @@ committed as a regression test once fixed.
   "villain" trajectory (destructive call without confirmation) fails the
   gate with the violating step named.
 
-**DoD:** gate exits 0 on the demo suite and 1 on the villain from a clean
-clone; every reported number carries its n and CI.
+**DoD:** from a clean clone, `agent-evals gate` (demo suites) exits 0 and
+`npm run demo:villain` (the villain suite, selected explicitly — the
+llm-evals-ts `gate` / `demo:gate` construction) exits 1 with the violating
+step named; every reported number carries its n and CI.
 **Gates:** code-review subagent; verification subagent re-run (full clean
 clone, offline, all fixtures + gate).
 
