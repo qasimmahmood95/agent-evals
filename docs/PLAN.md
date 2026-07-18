@@ -62,6 +62,8 @@ fixture schema round-trips the ADR-0001 example with real computed hashes
 backfilled for the ADR's truncated placeholders (the backfill commit updates
 the ADR in the same PR).
 **Gate:** code-review subagent on the PR diff.
+**Status: done** — evidence in docs/evidence/m1; review findings fixed in a
+follow-up commit.
 
 ## M2 — Record and replay
 
@@ -86,6 +88,8 @@ state, reordered steps) fails with the divergent step named — all three
 cases are unit-tested.
 **Gates:** code-review subagent; **verification subagent** — clean clone, no
 network, replay all fixtures, confirm determinism from scratch.
+**Status: done** — verification VERIFIED (clean clone, `unshare -n`);
+evidence in docs/evidence/m2.
 
 ## M3 — Trajectory assertions (the point of the repo)
 
@@ -131,6 +135,10 @@ were committed — hand-authored ones get no replay exemption); **adversarial
 subagent** — independently attempts one violating trajectory per allowlist
 rule and confirms the harness rejects each; any accepted violation is a
 release blocker and gets committed as a regression test once fixed.
+**Status: done** — verification VERIFIED; adversarial: 12 attack vectors,
+zero survivors; one review-found checker evasion (failed before-calls
+satisfying ordering) fixed with a regression test. Evidence in
+docs/evidence/m3.
 
 ## M4 — Statistical layer and CI gate
 
