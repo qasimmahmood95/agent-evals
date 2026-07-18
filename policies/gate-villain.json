@@ -1,0 +1,9 @@
+{
+  "description": "The villain gate: the degraded v2 agent's recordings against the v1 baseline. Ships red on purpose.",
+  "entries": [
+    {
+      "suite": "sampled-core-v2.suite.json",
+      "baseline": "../baselines/sampled-core.baseline.json"
+    }
+  ]
+}

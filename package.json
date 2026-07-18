@@ -14,7 +14,10 @@
     "cli": "tsx src/cli.ts",
     "replay": "tsx src/cli.ts replay",
     "fixtures:author": "tsx scripts/author-fixtures.ts",
-    "check": "tsx src/cli.ts check policies/demo-core.suite.json policies/adversarial.suite.json"
+    "check": "tsx src/cli.ts check policies/demo-core.suite.json policies/adversarial.suite.json",
+    "gate": "tsx src/cli.ts gate",
+    "demo:gate": "tsx src/cli.ts gate policies/gate-villain.json",
+    "baseline:author": "tsx scripts/make-baseline.ts"
   },
   "dependencies": {
     "commander": "^15.0.0",

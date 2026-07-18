@@ -19,3 +19,4 @@ jobs:
       - run: npm test
       - run: npm run replay   # every committed fixture must reproduce itself — no keys, no network
       - run: npm run check    # demo suite violation-free; adversarial suite catches every villain
+      - run: npm run gate     # statistical gate vs committed baseline (demo:gate ships red on purpose)

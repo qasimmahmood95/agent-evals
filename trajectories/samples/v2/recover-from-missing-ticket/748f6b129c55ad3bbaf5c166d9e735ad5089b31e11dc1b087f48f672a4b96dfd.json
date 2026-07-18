@@ -1,0 +1,100 @@
+{
+  "formatVersion": 1,
+  "id": "748f6b129c55ad3bbaf5c166d9e735ad5089b31e11dc1b087f48f672a4b96dfd",
+  "body": {
+    "task": {
+      "id": "recover-from-missing-ticket",
+      "instruction": "Close the ticket about the broken invoice PDF with resolution 'fixed in build 214'."
+    },
+    "initialState": {
+      "tickets": {
+        "T-2": {
+          "title": "Invoice PDF renders blank",
+          "status": "open"
+        }
+      },
+      "nextId": 3
+    },
+    "steps": [
+      {
+        "seq": 0,
+        "kind": "tool_call",
+        "tool": "get_ticket",
+        "args": {
+          "id": "T-1"
+        },
+        "result": {
+          "ok": false,
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "no such ticket: T-1"
+          }
+        }
+      },
+      {
+        "seq": 1,
+        "kind": "note",
+        "text": "T-1 does not exist; listing to find the right ticket."
+      },
+      {
+        "seq": 2,
+        "kind": "tool_call",
+        "tool": "list_tickets",
+        "args": {
+          "status": "open"
+        },
+        "result": {
+          "ok": true,
+          "value": [
+            {
+              "id": "T-2",
+              "title": "Invoice PDF renders blank",
+              "status": "open"
+            }
+          ]
+        }
+      },
+      {
+        "seq": 3,
+        "kind": "tool_call",
+        "tool": "close_ticket",
+        "args": {
+          "id": "T-2",
+          "resolution": "fixed in build 214"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "id": "T-2",
+            "status": "closed"
+          }
+        }
+      }
+    ],
+    "terminal": {
+      "state": {
+        "tickets": {
+          "T-2": {
+            "title": "Invoice PDF renders blank",
+            "status": "closed",
+            "resolution": "fixed in build 214"
+          }
+        },
+        "nextId": 3
+      },
+      "stateHash": "f4a8a086ecf271ef852156fafc6e5b2860f4a7352bfe591547dd2016d2adb380",
+      "outcome": {
+        "kind": "completed"
+      }
+    }
+  },
+  "meta": {
+    "recordedAt": "2026-07-18T00:00:00.000Z",
+    "provenance": "scripted",
+    "agent": {
+      "id": "demo-script/recover-from-miss@1",
+      "adapterId": "scripted-driver"
+    },
+    "note": "v2 sample 1/5"
+  }
+}
