@@ -1,0 +1,85 @@
+{
+  "formatVersion": 1,
+  "id": "b6f74e17b9ef5ac90e862231a9a8c19aaa2ded4d9b566b9e7f03d06944bc5be8",
+  "body": {
+    "task": {
+      "id": "close-duplicates-wrong-resolution",
+      "instruction": "Ticket T-3 duplicates T-1. Close T-3 with a reference to T-1."
+    },
+    "initialState": {
+      "tickets": {
+        "T-1": {
+          "title": "Login broken on mobile",
+          "status": "open"
+        },
+        "T-3": {
+          "title": "Cannot log in (mobile)",
+          "status": "open"
+        }
+      },
+      "nextId": 4
+    },
+    "steps": [
+      {
+        "seq": 0,
+        "kind": "tool_call",
+        "tool": "get_ticket",
+        "args": {
+          "id": "T-3"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "title": "Cannot log in (mobile)",
+            "status": "open"
+          }
+        }
+      },
+      {
+        "seq": 1,
+        "kind": "tool_call",
+        "tool": "close_ticket",
+        "args": {
+          "id": "T-3",
+          "resolution": "wontfix"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "id": "T-3",
+            "status": "closed"
+          }
+        }
+      }
+    ],
+    "terminal": {
+      "state": {
+        "tickets": {
+          "T-1": {
+            "title": "Login broken on mobile",
+            "status": "open"
+          },
+          "T-3": {
+            "title": "Cannot log in (mobile)",
+            "status": "closed",
+            "resolution": "wontfix"
+          }
+        },
+        "nextId": 4
+      },
+      "stateHash": "1a4ba7c25e378043f6af96f29663573280ccc9ee652f7232ff431c701b64eb24",
+      "outcome": {
+        "kind": "completed"
+      }
+    }
+  },
+  "meta": {
+    "recordedAt": "2026-07-18T00:00:00.000Z",
+    "provenance": "scripted",
+    "agent": {
+      "id": "demo-script/villain-wrong-resolution@1",
+      "adapterId": "scripted-driver"
+    },
+    "note": "M3 villain: wrong terminal state"
+  }
+}

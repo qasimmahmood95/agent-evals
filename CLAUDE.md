@@ -114,8 +114,9 @@ docs/evidence/   per-milestone evidence
 npm test              # offline-safe unit + property tests
 npm run typecheck     # tsc --noEmit
 npm run replay        # effect-replay every committed fixture (exit 0/1/2)
-npm run fixtures:author  # regenerate all scripted demo fixtures (byte-identical)
+npm run check         # policy suites: demo-core clean + adversarial catches all villains
+npm run fixtures:author  # regenerate all scripted fixtures incl. villains (byte-identical)
 ```
 
-`check` and `gate` land with their milestones (M3–M4) and are added here
-when they exist — this file never advertises a command that doesn't run.
+`gate` lands with M4 and is added here when it exists — this file never
+advertises a command that doesn't run.
