@@ -21,7 +21,7 @@ if (evaluation.kind === "config-error") {
   process.exit(2);
 }
 if (evaluation.integrityFailures > 0) {
-  console.error("baseline: refusing — fixtures failed integrity/replay");
+  console.error("baseline: refusing - fixtures failed integrity/replay");
   process.exit(1);
 }
 const tasks: Baseline["tasks"] = {};

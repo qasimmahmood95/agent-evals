@@ -6,7 +6,7 @@ import { executeTool, type ToolCall } from "./server.js";
 /**
  * The M1 determinism property (PLAN M1 DoD): any interleaving of tool
  * calls, replayed twice from the same state, yields identical results and
- * identical terminal states. Seeded PRNG — no Math.random — so a failure
+ * identical terminal states. Seeded PRNG - no Math.random - so a failure
  * is reproducible from the seed named in the assertion message.
  */
 

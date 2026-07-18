@@ -35,7 +35,7 @@ describe("runReplay", () => {
     expect(lines.at(-1)).toBe(`replay: ${demoScripts.length}/${demoScripts.length} fixtures reproduce themselves`);
   });
 
-  it("exits 1 when any fixture is corrupt on disk — unloadable is failed, not skipped", () => {
+  it("exits 1 when any fixture is corrupt on disk - unloadable is failed, not skipped", () => {
     const store = authorAll(root);
     const fixture = runScript(purgeSpam, { recordedAt: RECORDED_AT, note: "victim" });
     const victim = store.pathFor(purgeSpam.task.id, fixture.id, 0);
@@ -56,7 +56,7 @@ describe("runReplay", () => {
     expect(lines.at(-1)).toBe(`replay: ${demoScripts.length + 1}/${demoScripts.length + 1} fixtures reproduce themselves`);
   });
 
-  it("a directory with BOTH files and subdirectories loses nothing — the loose file fails as misplaced, the subtree is still walked", () => {
+  it("a directory with BOTH files and subdirectories loses nothing - the loose file fails as misplaced, the subtree is still walked", () => {
     const nested = new FixtureStore(join(root, "adversarial"));
     nested.save(runScript(purgeSpam, { recordedAt: RECORDED_AT, note: "nested" }));
     const loose = runScript(demoScripts[0]!.script, { recordedAt: RECORDED_AT, note: "loose" });
@@ -84,7 +84,7 @@ describe("runReplay", () => {
     expect(lines.at(-1)).toBe("replay: 2/3 fixtures FAILED to reproduce themselves");
   });
 
-  it("exits 2 on a missing root and on an empty root — nothing verified is not a pass", () => {
+  it("exits 2 on a missing root and on an empty root - nothing verified is not a pass", () => {
     expect(runReplay(join(root, "nope")).exitCode).toBe(2);
     const empty = join(root, "empty");
     mkdirSync(empty);

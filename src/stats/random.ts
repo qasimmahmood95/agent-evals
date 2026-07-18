@@ -1,7 +1,7 @@
 /**
  * Seeded PRNG for the bootstrap. mulberry32: tiny, deterministic across
  * platforms (integer math + Math.fround-free ops), good enough statistical
- * quality for resampling. Never Math.random — a seed appears in every
+ * quality for resampling. Never Math.random - a seed appears in every
  * reported CI so results are reproducible.
  */
 export function mulberry32(seed: number): () => number {

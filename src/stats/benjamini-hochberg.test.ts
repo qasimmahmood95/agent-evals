@@ -33,7 +33,7 @@ describe("benjaminiHochberg", () => {
       expect(qs[i]).toBeLessThanOrEqual(1);
     }
     for (let i = 1; i < ps.length; i++) {
-      expect(qs[i]).toBeGreaterThanOrEqual(qs[i - 1] as number); // sorted input → sorted q
+      expect(qs[i]).toBeGreaterThanOrEqual(qs[i - 1] as number); // sorted input -> sorted q
     }
   });
 

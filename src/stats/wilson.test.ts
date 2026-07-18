@@ -16,14 +16,14 @@ describe("wilson", () => {
     expect(wilson(3, 4)?.lower).toBeCloseTo(0.3006418426, 9);
   });
 
-  it("returns undefined for undefined quantities — never a fake zero", () => {
+  it("returns undefined for undefined quantities - never a fake zero", () => {
     expect(wilson(0, 0)).toBeUndefined();
     expect(wilson(-1, 10)).toBeUndefined();
     expect(wilson(11, 10)).toBeUndefined();
     expect(wilson(2.5, 10)).toBeUndefined();
   });
 
-  it("property: interval always contains p̂ and sits inside [0, 1]", () => {
+  it("property: interval always contains p-hat and sits inside [0, 1]", () => {
     for (let n = 1; n <= 30; n++) {
       for (let k = 0; k <= n; k++) {
         const ci = wilson(k, n);
@@ -37,7 +37,7 @@ describe("wilson", () => {
     }
   });
 
-  it("property: interval narrows as n grows at fixed p̂", () => {
+  it("property: interval narrows as n grows at fixed p-hat", () => {
     const w10 = wilson(5, 10);
     const w100 = wilson(50, 100);
     const w1000 = wilson(500, 1000);

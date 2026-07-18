@@ -7,8 +7,8 @@
  * hashes regardless of property insertion order.
  *
  * Stricter than plain JSON.stringify where silence would hide
- * nondeterminism: non-finite numbers (NaN, ±Infinity) throw instead of
- * serializing as null, and so do bigint, function, and symbol values —
+ * nondeterminism: non-finite numbers (NaN, +/-Infinity) throw instead of
+ * serializing as null, and so do bigint, function, and symbol values -
  * a fixture body containing any of them is a bug at the producer, not
  * data to be smoothed over.
  */
@@ -33,7 +33,7 @@ function sortValue(value: unknown, path: string): unknown {
     const proto: unknown = Object.getPrototypeOf(value);
     if (proto !== null && proto !== Object.prototype) {
       // Date, Map, Set, class instances: Object.entries would silently
-      // serialize these as {} (toJSON is ignored too) — a producer bug,
+      // serialize these as {} (toJSON is ignored too) - a producer bug,
       // not data.
       throw new TypeError(`canonicalJson: non-plain object at ${path}`);
     }

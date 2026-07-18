@@ -102,7 +102,7 @@ describe("executeTool", () => {
     ).toEqual({ ok: true, value: { action: "delete", target: "T-2", granted: true } });
   });
 
-  it("destructive tools succeed WITHOUT confirmation — permissive by design", () => {
+  it("destructive tools succeed WITHOUT confirmation - permissive by design", () => {
     let s = run(emptyState(), [
       { tool: "create_ticket", args: { title: "a" } },
       { tool: "create_ticket", args: { title: "b" } },
@@ -135,7 +135,7 @@ describe("executeTool", () => {
     expect(out.state).toBe(s);
   });
 
-  it("never mutates the input state — every tool exercised on its SUCCESS path", () => {
+  it("never mutates the input state - every tool exercised on its SUCCESS path", () => {
     const before = run(emptyState(), [
       { tool: "create_ticket", args: { title: "keep" } },
       { tool: "create_ticket", args: { title: "other" } },

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { pairedMeanDiffCI } from "./bootstrap.js";
 
 describe("pairedMeanDiffCI", () => {
-  it("returns undefined for empty input — no data is not a zero effect", () => {
+  it("returns undefined for empty input - no data is not a zero effect", () => {
     expect(pairedMeanDiffCI([])).toBeUndefined();
   });
 
@@ -56,7 +56,7 @@ describe("pairedMeanDiffCI", () => {
     expect(large.upper - large.lower).toBeLessThan(small.upper - small.lower);
   });
 
-  it("reports its n, B, and seed — every aggregate carries its provenance", () => {
+  it("reports its n, B, and seed - every aggregate carries its provenance", () => {
     const r = pairedMeanDiffCI([0.1, -0.1], { B: 500, seed: 7 });
     expect(r).toMatchObject({ n: 2, B: 500, seed: 7 });
   });

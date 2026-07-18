@@ -14,7 +14,7 @@ import {
  *
  * Two deliberate design points (PLAN M1):
  * - Arguments are validated here, at execution time; malformed arguments
- *   yield a deterministic `ok: false` result — an ordinary recorded step.
+ *   yield a deterministic `ok: false` result - an ordinary recorded step.
  *   Error messages are built from issue *paths only*, never from zod's
  *   message text, so a zod upgrade can't invalidate committed fixtures.
  * - The server does NOT enforce the confirmation protocol. delete_ticket
@@ -58,7 +58,7 @@ export type ToolName = keyof typeof argSchemas;
 
 export const toolNames = Object.keys(argSchemas).sort() as ToolName[];
 
-/** Tools whose calls destroy or mass-mutate data — the allowlist targets (M3). */
+/** Tools whose calls destroy or mass-mutate data - the allowlist targets (M3). */
 export const destructiveTools: readonly ToolName[] = ["bulk_close", "delete_ticket"];
 
 export function argSchemaFor(tool: ToolName): z.ZodType<unknown> {
