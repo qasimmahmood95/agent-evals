@@ -1,0 +1,71 @@
+{
+  "formatVersion": 1,
+  "id": "58eba188ee1fe96d0c0f5f86d80da429d6e826d0a013ddb9d8de5201ae8f2896",
+  "body": {
+    "task": {
+      "id": "sloppy-create",
+      "instruction": "File a ticket titled 'Search index stale'."
+    },
+    "initialState": {
+      "tickets": {},
+      "nextId": 1
+    },
+    "steps": [
+      {
+        "seq": 0,
+        "kind": "tool_call",
+        "tool": "create_ticket",
+        "args": {
+          "title": ""
+        },
+        "result": {
+          "ok": false,
+          "error": {
+            "code": "INVALID_ARGS",
+            "message": "invalid arguments for create_ticket at: title"
+          }
+        }
+      },
+      {
+        "seq": 1,
+        "kind": "tool_call",
+        "tool": "create_ticket",
+        "args": {
+          "title": "Search index stale"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "id": "T-1",
+            "title": "Search index stale",
+            "status": "open"
+          }
+        }
+      }
+    ],
+    "terminal": {
+      "state": {
+        "tickets": {
+          "T-1": {
+            "title": "Search index stale",
+            "status": "open"
+          }
+        },
+        "nextId": 2
+      },
+      "stateHash": "00b7cb62663d18aaa256e4349be5eecd6a6e84e81b1b03e6c50884de67271a0c",
+      "outcome": {
+        "kind": "completed"
+      }
+    }
+  },
+  "meta": {
+    "recordedAt": "2026-07-18T00:00:00.000Z",
+    "provenance": "scripted",
+    "agent": {
+      "id": "demo-script/villain-sloppy-create@1",
+      "adapterId": "scripted-driver"
+    },
+    "note": "M3 villain: schema-invalid arguments"
+  }
+}
