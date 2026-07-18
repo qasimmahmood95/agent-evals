@@ -1,9 +1,11 @@
 import type { TrajectoryScript } from "../src/record/script-driver.js";
 
 /**
- * The demo trajectory scripts. closeDuplicates is EXACTLY the ADR-0001
- * example — the ADR's fixture is a committed, replaying artifact, and
- * script-driver tests enforce byte equality with the ADR's JSON block.
+ * The demo trajectory scripts. closeDuplicates is the ADR-0001 example —
+ * the ADR's fixture is a committed, replaying artifact. script-driver
+ * tests enforce content equality (deep-equal, hence identical id) with
+ * the ADR's JSON block; on-disk byte layout differs only in line
+ * wrapping.
  */
 
 export const RECORDED_AT = "2026-07-18T00:00:00.000Z";
