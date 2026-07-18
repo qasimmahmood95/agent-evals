@@ -30,6 +30,13 @@ function sortValue(value: unknown, path: string): unknown {
     });
   }
   if (value !== null && typeof value === "object") {
+    const proto: unknown = Object.getPrototypeOf(value);
+    if (proto !== null && proto !== Object.prototype) {
+      // Date, Map, Set, class instances: Object.entries would silently
+      // serialize these as {} (toJSON is ignored too) — a producer bug,
+      // not data.
+      throw new TypeError(`canonicalJson: non-plain object at ${path}`);
+    }
     const entries = Object.entries(value as Record<string, unknown>)
       .filter(([, v]) => v !== undefined)
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));

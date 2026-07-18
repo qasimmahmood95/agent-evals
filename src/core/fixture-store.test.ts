@@ -90,8 +90,25 @@ describe("FixtureStore", () => {
   it("refuses to save a fixture whose id does not match its body", () => {
     const fixture = makeFixture({});
     const forged = { ...fixture, id: "0".repeat(64) };
-    expect(() => store.save(forged)).toThrow(/does not match body hash/);
+    expect(() => store.save(forged)).toThrow(/integrity failure at id/);
     expect(store.countFor("demo-task")).toBe(0);
+  });
+
+  it("refuses to save a fixture whose stateHash does not match its terminal state", () => {
+    const fixture = structuredClone(makeFixture({}));
+    fixture.body.terminal.stateHash = "0".repeat(64);
+    fixture.id = computeFixtureId(fixture.body); // id consistent with the lie
+    expect(() => store.save(fixture)).toThrow(/integrity failure at terminal\.stateHash/);
+    expect(store.countFor("demo-task")).toBe(0);
+  });
+
+  it("refuses to save a fixture whose task id would escape the store root", () => {
+    // bypass makeFixture's typed builder: construct the malicious body directly
+    const fixture = structuredClone(makeFixture({}));
+    fixture.body.task.id = "../../escaped-dir";
+    fixture.id = computeFixtureId(fixture.body); // hash covers the malicious id, so it is "consistent"
+    expect(() => store.save(fixture)).toThrow(/task\.id/);
+    expect(store.taskIds()).toEqual([]);
   });
 
   it("integrity-checks on load: a tampered file on disk is rejected, naming the file", () => {
