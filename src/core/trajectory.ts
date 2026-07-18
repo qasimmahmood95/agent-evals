@@ -8,7 +8,7 @@ import type { JsonValue } from "./json.js";
  * parseTrajectoryFixture.
  */
 
-const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+export const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([
     z.null(),
     z.boolean(),

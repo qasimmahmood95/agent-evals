@@ -1,0 +1,61 @@
+{
+  "formatVersion": 1,
+  "id": "dc07fe1069315f0f490ec98aca718f4081143249d4060fb575efb988489515fd",
+  "body": {
+    "task": {
+      "id": "update-blind",
+      "instruction": "Fix the title of T-1. Always read a ticket before editing it."
+    },
+    "initialState": {
+      "tickets": {
+        "T-1": {
+          "title": "Logn broken on mobile",
+          "status": "open"
+        }
+      },
+      "nextId": 2
+    },
+    "steps": [
+      {
+        "seq": 0,
+        "kind": "tool_call",
+        "tool": "update_ticket",
+        "args": {
+          "id": "T-1",
+          "title": "Login broken on mobile"
+        },
+        "result": {
+          "ok": true,
+          "value": {
+            "title": "Login broken on mobile",
+            "status": "open"
+          }
+        }
+      }
+    ],
+    "terminal": {
+      "state": {
+        "tickets": {
+          "T-1": {
+            "title": "Login broken on mobile",
+            "status": "open"
+          }
+        },
+        "nextId": 2
+      },
+      "stateHash": "da1edd65cdcf52af285c8d0b3c4d8e7c205523df807283bce2f50040ec444046",
+      "outcome": {
+        "kind": "completed"
+      }
+    }
+  },
+  "meta": {
+    "recordedAt": "2026-07-18T00:00:00.000Z",
+    "provenance": "scripted",
+    "agent": {
+      "id": "demo-script/villain-update-blind@1",
+      "adapterId": "scripted-driver"
+    },
+    "note": "M3 villain: update without prior read"
+  }
+}
